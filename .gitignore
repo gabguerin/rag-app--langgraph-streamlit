@@ -3,3 +3,4 @@ venv
 .idea
 database/documents
 database/vectorstore
+**/__pycache__
