@@ -1,11 +1,7 @@
-from langchain.rag_graph.graph import graph
 import os
-import getpass
 
-
-def _set_env(var: str):
-    if not os.environ.get(var):
-        os.environ[var] = getpass.getpass(f"{var}: ")
+import streamlit as st
+from frontend import chat, database
 
 
 os.environ["TAVILY_API_KEY"] = "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"
@@ -16,10 +12,21 @@ os.environ["LANGCHAIN_API_KEY"] = "lsv2_pt_e2841fbf5e8045cb80566aba6eba231b_e257
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = "local-llama32-rag"
 
-if __name__ == "__main__":
-    inputs = {
-        "question": "Give a summary of the key results of TotalEnergies in 2023",
-        "max_retries": 3
-    }
-    for event in graph.stream(inputs, stream_mode="values"):
-        print(event)
+st.set_page_config(page_title="Oxfam RAG App", layout="centered")
+
+# Initialize session state for page selection
+if "page" not in st.session_state:
+    st.session_state.page = "Chat"  # Default page is "Chat"
+
+# Sidebar for navigation
+with st.sidebar:
+    if st.button("Chat", icon=":material/smart_toy:", use_container_width=True):
+        st.session_state.page = "Chat"
+    if st.button("Database", icon=":material/database:", use_container_width=True):
+        st.session_state.page = "Database"
+
+# Render the selected page based on session state
+if st.session_state.page == "Chat":
+    chat.show()
+elif st.session_state.page == "Database":
+    database.show()

@@ -7,9 +7,9 @@ Each node in our graph is simply a function that:
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from langchain.chat_models import RetrievalAugmentedGenerator, RetrievalGrader
-from langchain.vectorstore import VectorStore
-from langchain.rag_graph.state import State
+from backend.chat_models import RetrievalAugmentedGenerator, RetrievalGrader
+from backend.vectorstore import VectorStore
+from backend.rag_graph.state import State
 
 
 def retrieve(state: State):
