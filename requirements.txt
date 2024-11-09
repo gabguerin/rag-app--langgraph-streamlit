@@ -1,0 +1,11 @@
+bs4
+langchain
+langchain_community
+langchain-nomic
+langchain-ollama
+langgraph
+ollama
+scikit-learn
+streamlit
+tavily-python
+tiktoken
