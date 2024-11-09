@@ -62,6 +62,7 @@ Return JSON with single key, binary_score, that is 'yes' or 'no' score to indica
             [SystemMessage(content=self.instructions)]
             + [HumanMessage(content=prompt_formatted)]
         )
+        print(json.loads(result.content))
         return json.loads(result.content)
 
 class HallucinationGrader:
@@ -92,9 +93,9 @@ Avoid simply stating the correct answer at the outset."""
 
 Return JSON with two two keys, binary_score is 'yes' or 'no' score to indicate whether the STUDENT ANSWER is grounded in the FACTS. And a key, explanation, that contains an explanation of the score."""
 
-    def invoke(self, documents: List[Document], question: str):
+    def invoke(self, documents: List[Document], generation: str):
         prompt_formatted = self.prompt.format(
-            document=format_documents(documents), question=question
+            documents=format_documents(documents), generation=generation
         )
         result = self.llm.invoke(
             [SystemMessage(content=self.instructions)]
@@ -129,9 +130,9 @@ Avoid simply stating the correct answer at the outset."""
 
 Return JSON with two two keys, binary_score is 'yes' or 'no' score to indicate whether the STUDENT ANSWER meets the criteria. And a key, explanation, that contains an explanation of the score."""
 
-    def invoke(self, question: str, answer: str):
+    def invoke(self, question: str, generation: str):
         prompt_formatted = self.prompt.format(
-            question=question, answer=answer
+            question=question, generation=generation
         )
         result = self.llm.invoke(
             [SystemMessage(content=self.instructions)]
@@ -145,7 +146,7 @@ class Router:
         self.llm = ChatOllama(model=MODEL_NAME, temperature=0, format="json")
         self.instructions = """You are an expert at routing a user question to a vectorstore or web search.
 
-The vectorstore contains documents related to agents, prompt engineering, and adversarial attacks.
+The vectorstore contains documents related to TotalEnergies results in 2023.
 
 Use the vectorstore for questions on these topics. For all else, and especially for current events, use web-search.
 

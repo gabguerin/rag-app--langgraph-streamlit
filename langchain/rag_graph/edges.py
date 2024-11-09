@@ -1,7 +1,9 @@
-from backend.models.chat_models import Router, HallucinationGrader, AnswerGrader
+"""Each edge routes between nodes in the graph."""
+from langchain.chat_models import Router, HallucinationGrader, AnswerGrader
+from langchain.rag_graph.state import State
 
 
-def route_question(state):
+def route_question(state: State):
     """
     Route question to web search or RAG
 
@@ -23,7 +25,7 @@ def route_question(state):
         return "vectorstore"
 
 
-def decide_to_generate(state):
+def decide_to_generate(state: State):
     """
     Determines whether to generate an answer, or add web search
 
@@ -48,7 +50,7 @@ def decide_to_generate(state):
         return "generate"
 
 
-def grade_generation_v_documents_and_question(state):
+def grade_generation_v_documents_and_question(state: State):
     """
     Determines whether the generation is grounded in the document and answers question
 
@@ -66,7 +68,7 @@ def grade_generation_v_documents_and_question(state):
     max_retries = state.get("max_retries", 3)  # Default to 3 if not provided
 
     hallucination_grader = HallucinationGrader()
-    result = hallucination_grader.invoke(question=question, documents=documents)
+    result = hallucination_grader.invoke(documents=documents, generation=generation.content)
     print(f"---EXPLANATION: {result['explanation']}---")
 
     grade = result["binary_score"]
@@ -78,7 +80,7 @@ def grade_generation_v_documents_and_question(state):
         # Test using question and generation from above
         answer_grader = AnswerGrader()
         answer_grader_result = answer_grader.invoke(
-            question=question, answer=generation.content
+            question=question, generation=generation.content
         )
         grade = answer_grader_result["binary_score"]
         if grade == "yes":

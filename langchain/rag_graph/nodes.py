@@ -7,11 +7,12 @@ Each node in our graph is simply a function that:
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from backend.models.chat_models import RetrievalAugmentedGenerator, RetrievalGrader
-from backend.models.retriever import Retriever
+from langchain.chat_models import RetrievalAugmentedGenerator, RetrievalGrader
+from langchain.vectorstore import VectorStore
+from langchain.rag_graph.state import State
 
 
-def retrieve(state):
+def retrieve(state: State):
     """
     Retrieve documents from vectorstore
 
@@ -24,13 +25,13 @@ def retrieve(state):
     print("---RETRIEVE---")
     question = state["question"]
 
-    retriever = Retriever()
+    retriever = VectorStore()
     # Write retrieved documents to documents key in state
-    documents = retriever.invoke(question)
+    documents = retriever.retrieve(question)
     return {"documents": documents}
 
 
-def generate(state):
+def generate(state: State):
     """
     Generate answer using RAG on retrieved documents
 
@@ -50,7 +51,7 @@ def generate(state):
     return {"generation": rag.invoke(documents=documents, question=question), "loop_step": loop_step + 1}
 
 
-def grade_documents(state):
+def grade_documents(state: State):
     """
     Determines whether the retrieved documents are relevant to the question
     If any document is not relevant, we will set a flag to run web search
@@ -87,7 +88,7 @@ def grade_documents(state):
     return {"documents": filtered_documents, "web_search": web_search}
 
 
-def web_search(state):
+def web_search(state: State):
     """
     Web search based on the question
 

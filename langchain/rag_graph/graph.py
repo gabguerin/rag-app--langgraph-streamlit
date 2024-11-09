@@ -1,11 +1,11 @@
 from langgraph.constants import END
 from langgraph.graph import StateGraph
 
-from backend.rag_graph.edges import route_question, decide_to_generate, grade_generation_v_documents_and_question
-from backend.rag_graph.graph_state import GraphState
-from backend.rag_graph.nodes import web_search, retrieve, grade_documents, generate
+from langchain.rag_graph.edges import route_question, decide_to_generate, grade_generation_v_documents_and_question
+from langchain.rag_graph.state import State
+from langchain.rag_graph.nodes import web_search, retrieve, grade_documents, generate
 
-workflow = StateGraph(GraphState)
+workflow = StateGraph(State)
 
 # Define the nodes
 workflow.add_node("websearch", web_search)  # web search
