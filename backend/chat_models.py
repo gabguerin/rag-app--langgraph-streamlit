@@ -2,7 +2,7 @@ import json
 from typing import List
 
 from langchain_core.documents import Document
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langchain_ollama import ChatOllama
 
 
@@ -17,42 +17,66 @@ class RetrievalAugmentedGenerator:
 
     def __init__(self):
         self.llm = ChatOllama(model=MODEL_NAME, temperature=0)
-        self.rag_prompt = """You are an assistant for question-answering tasks. 
+        self.rag_prompt = """Vous êtes un assistant pour des tâches de question-réponse. 
 
-Here is the context to use to answer the question:
+Voici le contexte à utiliser pour répondre à la question :
 
 {context} 
 
-Think carefully about the above context. 
+Réfléchissez attentivement au contexte ci-dessus. 
 
-Now, review the user question:
+Maintenant, examinez la question de l'utilisateur :
 
 {question}
 
-Provide an answer to this questions using only the above context. 
+Fournissez une réponse à cette question en utilisant uniquement le contexte ci-dessus. 
 
-Use three sentences maximum and keep the answer concise.
+Utilisez un maximum de trois phrases et gardez la réponse concise.
 
-Answer:"""
+Réponse :"""
 
-    def invoke(self, documents: List[Document], question: str):
+    def invoke(self, documents: List[Document], question: str) -> str:
         documents_txt = format_documents(documents)
         rag_prompt_formatted = self.rag_prompt.format(context=documents_txt, question=question)
-        return self.llm.invoke([HumanMessage(content=rag_prompt_formatted)])
+        result = self.llm.invoke([HumanMessage(content=rag_prompt_formatted)])
+        print(result.content)
+        return result.content
+
+
+class QuestionRewriter:
+
+    def __init__(self):
+        self.llm = ChatOllama(model=MODEL_NAME, temperature=0)
+        self.prompt = """Regardez l'entrée et essayez de raisonner sur l'intention / signification sous-jacente. \n 
+Voici la question initiale :
+
+{question} 
+
+Formulez une question améliorée, soyez concis, seule la nouvelle question doit etre repondu :"""
+
+    def invoke(self, question: str):
+        prompt_formatted = self.prompt.format(
+            question=question
+        )
+        result = self.llm.invoke(
+            [HumanMessage(content=prompt_formatted)]
+        )
+        print(result.content)
+        return result.content
 
 
 class RetrievalGrader:
 
     def __init__(self):
         self.llm = ChatOllama(model=MODEL_NAME, temperature=0, format="json")
-        self.instructions = """You are a grader assessing relevance of a retrieved document to a user question.
+        self.instructions = """Vous êtes un correcteur évaluant la pertinence d'un document récupéré par rapport à une question posée.
 
-If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant."""
-        self.prompt = """Here is the retrieved document: \n\n {document} \n\n Here is the user question: \n\n {question}. 
+Si le document contient des mots-clés ou des informations sémantiques liées à la question, évaluez-le comme pertinent."""
+        self.prompt = """Voici le document récupéré : \n\n {document} \n\n Voici la question de l'utilisateur : \n\n {question}. 
 
-This carefully and objectively assess whether the document contains at least some information that is relevant to the question.
+Évaluez soigneusement et objectivement si le document contient au moins une information pertinente pour la question.
 
-Return JSON with single key, binary_score, that is 'yes' or 'no' score to indicate whether the document contains at least some information that is relevant to the question."""
+Retournez un JSON avec une seule clé, `binary_score`, qui est 'oui' ou 'non' pour indiquer si le document contient des informations pertinentes pour la question."""
 
     def invoke(self, document: Document, question: str):
         prompt_formatted = self.prompt.format(
@@ -70,28 +94,28 @@ class HallucinationGrader:
     def __init__(self):
         self.llm = ChatOllama(model=MODEL_NAME, temperature=0, format="json")
         self.instructions = """
-You are a teacher grading a quiz. 
+Vous êtes un enseignant notant un quiz. 
 
-You will be given FACTS and a STUDENT ANSWER. 
+Vous recevrez des FAITS et une RÉPONSE D'ÉTUDIANT. 
 
-Here is the grade criteria to follow:
+Voici les critères de notation à suivre :
 
-(1) Ensure the STUDENT ANSWER is grounded in the FACTS. 
+(1) Assurez-vous que la RÉPONSE D'ÉTUDIANT est fondée sur les FAITS. 
 
-(2) Ensure the STUDENT ANSWER does not contain "hallucinated" information outside the scope of the FACTS.
+(2) Assurez-vous que la RÉPONSE D'ÉTUDIANT ne contient pas d'informations "hallucinées" en dehors des FAITS.
 
-Score:
+Note :
 
-A score of yes means that the student's answer meets all of the criteria. This is the highest (best) score. 
+Une note de "oui" signifie que la réponse de l'étudiant respecte tous les critères. C'est la meilleure note. 
 
-A score of no means that the student's answer does not meet all of the criteria. This is the lowest possible score you can give.
+Une note de "non" signifie que la réponse de l'étudiant ne respecte pas tous les critères. C'est la note la plus basse.
 
-Explain your reasoning in a step-by-step manner to ensure your reasoning and conclusion are correct. 
+Expliquez votre raisonnement étape par étape pour justifier votre évaluation. 
 
-Avoid simply stating the correct answer at the outset."""
-        self.prompt = """FACTS: \n\n {documents} \n\n STUDENT ANSWER: {generation}. 
+Évitez de simplement énoncer la réponse correcte dès le début."""
+        self.prompt = """FAITS : \n\n {documents} \n\n RÉPONSE D'ÉTUDIANT : {generation}. 
 
-Return JSON with two two keys, binary_score is 'yes' or 'no' score to indicate whether the STUDENT ANSWER is grounded in the FACTS. And a key, explanation, that contains an explanation of the score."""
+Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour indiquer si la RÉPONSE D'ÉTUDIANT est fondée sur les FAITS, et une clé `explanation` qui contient l'explication de la note."""
 
     def invoke(self, documents: List[Document], generation: str):
         prompt_formatted = self.prompt.format(
@@ -107,28 +131,28 @@ class AnswerGrader:
 
     def __init__(self):
         self.llm = ChatOllama(model=MODEL_NAME, temperature=0, format="json")
-        self.instructions = """You are a teacher grading a quiz. 
+        self.instructions = """Vous êtes un enseignant notant un quiz. 
 
-You will be given a QUESTION and a STUDENT ANSWER. 
+Vous recevrez une QUESTION et une RÉPONSE D'ÉTUDIANT. 
 
-Here is the grade criteria to follow:
+Voici les critères de notation à suivre :
 
-(1) The STUDENT ANSWER helps to answer the QUESTION
+(1) La RÉPONSE D'ÉTUDIANT aide à répondre à la QUESTION.
 
-Score:
+Note :
 
-A score of yes means that the student's answer meets all of the criteria. This is the highest (best) score. 
+Une note de "oui" signifie que la réponse de l'étudiant respecte tous les critères. C'est la meilleure note. 
 
-The student can receive a score of yes if the answer contains extra information that is not explicitly asked for in the question.
+L'étudiant peut recevoir une note de "oui" même si la réponse contient des informations supplémentaires qui ne sont pas explicitement demandées dans la question.
 
-A score of no means that the student's answer does not meet all of the criteria. This is the lowest possible score you can give.
+Une note de "non" signifie que la réponse de l'étudiant ne respecte pas tous les critères. C'est la note la plus basse.
 
-Explain your reasoning in a step-by-step manner to ensure your reasoning and conclusion are correct. 
+Expliquez votre raisonnement étape par étape pour justifier votre évaluation. 
 
-Avoid simply stating the correct answer at the outset."""
-        self.prompt = """QUESTION: \n\n {question} \n\n STUDENT ANSWER: {generation}. 
+Évitez de simplement énoncer la réponse correcte dès le début."""
+        self.prompt = """QUESTION : \n\n {question} \n\n RÉPONSE D'ÉTUDIANT : {generation}. 
 
-Return JSON with two two keys, binary_score is 'yes' or 'no' score to indicate whether the STUDENT ANSWER meets the criteria. And a key, explanation, that contains an explanation of the score."""
+Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour indiquer si la RÉPONSE D'ÉTUDIANT respecte les critères, et une clé `explanation` qui contient l'explication de la note."""
 
     def invoke(self, question: str, generation: str):
         prompt_formatted = self.prompt.format(
@@ -144,13 +168,13 @@ class Router:
 
     def __init__(self):
         self.llm = ChatOllama(model=MODEL_NAME, temperature=0, format="json")
-        self.instructions = """You are an expert at routing a user question to a vectorstore or web search.
+        self.instructions = """Vous êtes un expert dans l'acheminement d'une question utilisateur vers une base de données vectorielle ou une recherche web.
 
-The vectorstore contains documents related to TotalEnergies results in 2023.
+La base de données vectorielle contient des documents relatifs aux résultats de TotalEnergies en 2023.
 
-Use the vectorstore for questions on these topics. For all else, and especially for current events, use web-search.
+Utilisez la base de données vectorielle pour les questions sur ces sujets. Pour toutes les autres questions, et surtout celles concernant l'actualité, utilisez la recherche web.
 
-Return JSON with single key, datasource, that is 'websearch' or 'vectorstore' depending on the question."""
+Retournez un JSON avec une seule clé `datasource`, qui est 'websearch' ou 'vectorstore' en fonction de la question."""
 
     def invoke(self, question: str):
         result = self.llm.invoke(

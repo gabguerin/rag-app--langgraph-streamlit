@@ -12,3 +12,4 @@ scikit-learn
 streamlit
 tavily-python
 tiktoken
+unstructured[all-docs]

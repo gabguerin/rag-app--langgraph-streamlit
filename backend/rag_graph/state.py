@@ -17,7 +17,7 @@ class State(TypedDict):
     """
 
     question: str  # User question
-    generation: BaseMessage  # LLM generation
+    generation: str  # LLM generation
     web_search: str  # Binary decision to run web search
     max_retries: int  # Max number of retries for answer generation
     answers: int  # Number of answers generated

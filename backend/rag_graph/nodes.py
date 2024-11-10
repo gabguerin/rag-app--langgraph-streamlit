@@ -7,7 +7,7 @@ Each node in our graph is simply a function that:
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from backend.chat_models import RetrievalAugmentedGenerator, RetrievalGrader
+from backend.chat_models import RetrievalAugmentedGenerator, RetrievalGrader, QuestionRewriter
 from backend.vectorstore import VectorStore
 from backend.rag_graph.state import State
 
@@ -31,6 +31,27 @@ def retrieve(state: State):
     return {"documents": documents}
 
 
+def rewrite(state: State):
+
+    """
+    Transform the query to produce a better question.
+
+    Args:
+        state (messages): The current state
+
+    Returns:
+        dict: The updated state with re-phrased question
+    """
+
+    print("---REWRITE QUERY---")
+    question = state["question"]
+
+    # RAG generation
+    rewriter = QuestionRewriter()
+    new_question = rewriter.invoke(question=question)
+    return {"question": new_question}
+
+
 def generate(state: State):
     """
     Generate answer using RAG on retrieved documents
@@ -48,7 +69,8 @@ def generate(state: State):
 
     # RAG generation
     rag = RetrievalAugmentedGenerator()
-    return {"generation": rag.invoke(documents=documents, question=question), "loop_step": loop_step + 1}
+    generation = rag.invoke(documents=documents, question=question)
+    return {"generation": generation, "loop_step": loop_step + 1}
 
 
 def grade_documents(state: State):
