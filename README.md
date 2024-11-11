@@ -4,3 +4,5 @@ https://github.com/langchain-ai/langchain/blob/master/cookbook/Semi_structured_m
 - https://ucd-dnp.github.io/ConTexto/versiones/master/instalacion/instalacion_popple_teseract_windows.html
 
 https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_adaptive_rag_local/
+
+https://docs.unstructured.io/examplecode/notebooks

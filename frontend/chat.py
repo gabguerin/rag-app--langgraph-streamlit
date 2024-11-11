@@ -1,10 +1,9 @@
 # pages/chat.py
 import streamlit as st
 from backend.rag_graph.graph import graph
-from backend.vectorstore import PDFVectorstore
 
 
-def show(db: PDFVectorstore):
+def show():
     st.title("Oxfam Chatbot")
 
     # Initialize chat history

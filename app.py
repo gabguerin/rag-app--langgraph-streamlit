@@ -1,14 +1,10 @@
 import streamlit as st
 from dotenv import load_dotenv
 
-from backend.vectorstore import PDFVectorstore
 from frontend import chat, database
 
 # Load env variables
 load_dotenv()
-
-# Open Database
-db = PDFVectorstore()
 
 st.set_page_config(page_title="Oxfam RAG App", layout="centered")
 
@@ -25,6 +21,6 @@ with st.sidebar:
 
 # Render the selected page based on session state
 if st.session_state.page == "Chat":
-    chat.show(db)
+    chat.show()
 elif st.session_state.page == "Database":
     database.show(db)

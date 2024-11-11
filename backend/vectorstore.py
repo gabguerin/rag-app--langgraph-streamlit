@@ -2,10 +2,8 @@ import uuid
 from pathlib import Path
 from typing import List, Tuple
 
-from langchain.retrievers import MultiVectorRetriever
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_core.stores import InMemoryStore
 from langchain_nomic import NomicEmbeddings
 from tqdm import tqdm
 from unstructured.partition.pdf import partition_pdf
@@ -22,7 +20,6 @@ EMBEDDING_MODEL_NAME = "nomic-embed-text-v1.5"
 class PDFVectorstore:
 
     def __init__(self):
-
         self.documents_path = DOCUMENTS_PATH
         self.vectorstore_path = VECTORSTORE_PATH
 
@@ -30,21 +27,9 @@ class PDFVectorstore:
             model=EMBEDDING_MODEL_NAME, inference_mode="local"
         )
         self.vectorstore = Chroma(
-            collection_name="summaries",
             persist_directory=self.vectorstore_path,
             embedding_function=self.embedding_function,
         )
-
-        # The storage layer for the parent documents
-        # self.document_store = InMemoryStore()
-        # self.document_store_id_key = "document_id"
-
-        # self.retriever = MultiVectorRetriever(
-        #     vectorstore=self.vectorstore,
-        #     docstore=self.document_store,
-        #     id_key=self.document_store_id_key,
-        # )
-
         self.update_vectorstore()
 
         self.retriever = self.vectorstore.as_retriever(k=3)
@@ -54,7 +39,7 @@ class PDFVectorstore:
             raise ValueError("Retriever has not been initialized.")
         return self.retriever.invoke(query)
 
-    def update_vectorstore(self):
+    def update_vectorstore(self) -> None:
         for pdf_filepath in self.documents_path.rglob("*.pdf"):
             pdf_filename = pdf_filepath.name
             print("Processing " + pdf_filename)
@@ -64,9 +49,11 @@ class PDFVectorstore:
 
     def _is_document_stored(self, pdf_filename: str) -> bool:
         """Check if a PDF document is already stored in the document store by filename."""
-        stored_docs = self.vectorstore.get(where={"filename": pdf_filename})
+        stored_docs = self.vectorstore.similarity_search(
+            "", filter={"filename": pdf_filename}
+        )
         print(stored_docs)
-        return len(stored_docs["documents"]) > 0
+        return len(stored_docs) > 0
 
     def _add_new_file_to_vectorstore(self, pdf_filename: str):
         raw_pdf_elements = partition_pdf(
@@ -82,40 +69,33 @@ class PDFVectorstore:
 
         table_elements, text_elements = [], []
         for element in raw_pdf_elements:
-            str(element)
-            if "unstructured.documents.elements.Table" in str(type(element)):
+            print(str(element))
+            if "documents.elements.Table" in str(type(element)):
                 table_elements.append(str(element))
-            elif "unstructured.documents.elements.CompositeElement" in str(
-                type(element)
-            ):
+            elif "documents.elements.CompositeElement" in str(type(element)):
                 text_elements.append(str(element))
 
-        print("Summarizing table chunks in " + pdf_filename)
         table_ids, table_chunks = self._summarize_table_or_text_elements(
-            table_elements, pdf_filename, type="table"
+            table_elements, pdf_filename=pdf_filename, element_type="table"
         )
-
-        print("Summarizing text in " + pdf_filename)
         text_ids, text_chunks = self._summarize_table_or_text_elements(
-            text_elements, pdf_filename, type="text"
+            text_elements, pdf_filename=pdf_filename, element_type="text"
         )
 
-        self.vectorstore.add_documents(table_chunks + text_chunks)
-
-        # self.retriever.docstore.mset(
-        #     list(zip(table_ids, table_chunks)) + list(zip(text_ids, text_chunks))
-        # )
-        # self.retriever.vectorstore.add_documents(table_chunks + text_chunks)
+        self.vectorstore.add_documents(
+            table_chunks + text_chunks, ids=table_ids + text_ids
+        )
 
     @staticmethod
     def _summarize_table_or_text_elements(
-        table_or_text_elements: List[str], pdf_filename: str, type: str
+        table_or_text_elements: List[str], pdf_filename: str, element_type: str
     ) -> Tuple[List[str], List[Document]]:
         summarizer = TableNTextSummarizer()
         summarized_elements = [
             summarizer.invoke(element=element)
             for element in tqdm(
-                table_or_text_elements, desc=f"Summarizing {type} elements..."
+                table_or_text_elements,
+                desc=f"Summarizing {element_type} elements of {pdf_filename}...",
             )
         ]
 
@@ -126,7 +106,7 @@ class PDFVectorstore:
                 metadata={
                     "document_id": document_ids[idx],
                     "filename": pdf_filename,
-                    "type": type,
+                    "type": element_type,
                 },
             )
             for idx, element in enumerate(summarized_elements)

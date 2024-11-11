@@ -9,7 +9,7 @@ import streamlit as st
 from backend.vectorstore import PDFVectorstore
 
 
-def show(db: PDFVectorstore):
+def show():
     st.title("Upload Files")
     uploaded_files = st.file_uploader(
         "Choose files",
@@ -17,6 +17,8 @@ def show(db: PDFVectorstore):
         accept_multiple_files=True,
         label_visibility="collapsed",
     )
+
+    db = PDFVectorstore()
 
     if uploaded_files:
         st.write("Uploaded Files:")

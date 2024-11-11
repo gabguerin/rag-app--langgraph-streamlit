@@ -8,13 +8,13 @@ Each node in our graph is simply a function that:
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from app import db
 from backend.chat_models import (
     RetrievalAugmentedGenerator,
     RetrievalGrader,
     QuestionRewriter,
 )
 from backend.rag_graph.state import State
+from backend.vectorstore import PDFVectorstore
 
 
 def retrieve(state: State):
@@ -30,6 +30,8 @@ def retrieve(state: State):
     print("---RETRIEVE---")
     question = state["question"]
 
+    # Open Database
+    db = PDFVectorstore()
     # Write retrieved documents to documents key in state
     documents = db.retrieve(question)
     return {"documents": documents}
