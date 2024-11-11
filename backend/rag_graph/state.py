@@ -3,10 +3,10 @@ The graph state schema contains keys that we want to:
     - Pass to each node in our graph
     - Optionally, modify in each node of our graph
 """
+
 import operator
 
 from langchain_core.documents import Document
-from langchain_core.messages import BaseMessage
 from typing_extensions import TypedDict
 from typing import List, Annotated
 

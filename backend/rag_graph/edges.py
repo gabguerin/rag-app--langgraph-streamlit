@@ -1,4 +1,5 @@
 """Each edge routes between nodes in the graph."""
+
 from backend.chat_models import Router, HallucinationGrader, AnswerGrader
 from backend.rag_graph.state import State
 
@@ -68,7 +69,9 @@ def grade_generation_v_documents_and_question(state: State):
     max_retries = state.get("max_retries", 3)  # Default to 3 if not provided
 
     hallucination_grader = HallucinationGrader()
-    result = hallucination_grader.invoke(documents=documents, generation=generation.content)
+    result = hallucination_grader.invoke(
+        documents=documents, generation=generation.content
+    )
     print(f"---EXPLANATION: {result['explanation']}---")
 
     grade = result["binary_score"]

@@ -1,85 +1,133 @@
-from typing import List
+import uuid
+from pathlib import Path
+from typing import List, Tuple
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain.retrievers import MultiVectorRetriever
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-
+from langchain_core.stores import InMemoryStore
 from langchain_nomic import NomicEmbeddings
+from tqdm import tqdm
+from unstructured.partition.pdf import partition_pdf
 
-DOCUMENTS_PATH = "database/documents"
+from backend.chat_models import TableNTextSummarizer
+
+DOCUMENTS_PATH = Path("database/documents")
 VECTORSTORE_PATH = "database/vectorstore"
+OUTPUT_IMAGES_PATH = "database/output_images"
+
+EMBEDDING_MODEL_NAME = "nomic-embed-text-v1.5"
 
 
-class VectorStore:
+class PDFVectorstore:
 
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200, k: int = 3):
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.k = k
+    def __init__(self):
 
         self.documents_path = DOCUMENTS_PATH
         self.vectorstore_path = VECTORSTORE_PATH
 
-        self.embedding_function = NomicEmbeddings(model="nomic-embed-text-v1.5", inference_mode="local")
-        self.vectorstore = Chroma(
-            persist_directory=self.vectorstore_path, embedding_function=self.embedding_function
+        self.embedding_function = NomicEmbeddings(
+            model=EMBEDDING_MODEL_NAME, inference_mode="local"
         )
-        
+        self.vectorstore = Chroma(
+            collection_name="summaries",
+            persist_directory=self.vectorstore_path,
+            embedding_function=self.embedding_function,
+        )
+
+        # The storage layer for the parent documents
+        # self.document_store = InMemoryStore()
+        # self.document_store_id_key = "document_id"
+
+        # self.retriever = MultiVectorRetriever(
+        #     vectorstore=self.vectorstore,
+        #     docstore=self.document_store,
+        #     id_key=self.document_store_id_key,
+        # )
+
         self.update_vectorstore()
-        self.retriever = self.vectorstore.as_retriever(k=self.k)
+
+        self.retriever = self.vectorstore.as_retriever(k=3)
 
     def retrieve(self, query: str) -> list[Document]:
         if not self.retriever:
             raise ValueError("Retriever has not been initialized.")
         return self.retriever.invoke(query)
 
-    def _load_documents(self) -> List[Document]:
-        directory_loader = PyPDFDirectoryLoader(self.documents_path)
-        return directory_loader.load()
+    def update_vectorstore(self):
+        for pdf_filepath in self.documents_path.rglob("*.pdf"):
+            pdf_filename = pdf_filepath.name
+            print("Processing " + pdf_filename)
+            # Check if the document has already been processed
+            if not self._is_document_stored(pdf_filename):
+                self._add_new_file_to_vectorstore(pdf_filename)
 
-    def _split_documents(self, documents: List[Document]) -> List[Document]:
-        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap
+    def _is_document_stored(self, pdf_filename: str) -> bool:
+        """Check if a PDF document is already stored in the document store by filename."""
+        stored_docs = self.vectorstore.get(where={"filename": pdf_filename})
+        print(stored_docs)
+        return len(stored_docs["documents"]) > 0
+
+    def _add_new_file_to_vectorstore(self, pdf_filename: str):
+        raw_pdf_elements = partition_pdf(
+            filename=self.documents_path / pdf_filename,
+            extract_images_in_pdf=False,
+            infer_table_structure=True,
+            chunking_strategy="by_title",
+            max_characters=4000,
+            new_after_n_chars=3800,
+            combine_text_under_n_chars=2000,
+            image_output_dir_path=OUTPUT_IMAGES_PATH,
         )
-        return text_splitter.split_documents(documents)
 
-    def update_vectorstore(self) -> None:
-        documents = self._load_documents()
-        chunks = self._split_documents(documents)
+        table_elements, text_elements = [], []
+        for element in raw_pdf_elements:
+            str(element)
+            if "unstructured.documents.elements.Table" in str(type(element)):
+                table_elements.append(str(element))
+            elif "unstructured.documents.elements.CompositeElement" in str(
+                type(element)
+            ):
+                text_elements.append(str(element))
 
-        # Assign unique IDs to chunks based on source and page information.
-        chunks_with_ids = self._assign_chunk_ids(chunks)
+        print("Summarizing table chunks in " + pdf_filename)
+        table_ids, table_chunks = self._summarize_table_or_text_elements(
+            table_elements, pdf_filename, type="table"
+        )
 
-        # Get existing document IDs in the database.
-        existing_ids = set(self.vectorstore.get(include=[])["ids"])
-        print(f"Vectorstore: Number of existing documents in DB: {len(existing_ids)}")
+        print("Summarizing text in " + pdf_filename)
+        text_ids, text_chunks = self._summarize_table_or_text_elements(
+            text_elements, pdf_filename, type="text"
+        )
 
-        # Filter out chunks that already exist in the database.
-        new_chunks = [chunk for chunk in chunks_with_ids if chunk.metadata["id"] not in existing_ids]
+        self.vectorstore.add_documents(table_chunks + text_chunks)
 
-        if new_chunks:
-            print(f"Vectorstore: Adding new documents: {len(new_chunks)}")
-            self.vectorstore.add_documents(new_chunks, ids=[chunk.metadata["id"] for chunk in new_chunks])
-        else:
-            print("Vectorstore: No new documents to add")
+        # self.retriever.docstore.mset(
+        #     list(zip(table_ids, table_chunks)) + list(zip(text_ids, text_chunks))
+        # )
+        # self.retriever.vectorstore.add_documents(table_chunks + text_chunks)
 
     @staticmethod
-    def _assign_chunk_ids(chunks: list[Document]) -> list[Document]:
-        """
-        Assigns unique IDs to each chunk in the format 'source:page:chunk_index'.
-        """
-        last_page_id, current_chunk_index = None, 0
+    def _summarize_table_or_text_elements(
+        table_or_text_elements: List[str], pdf_filename: str, type: str
+    ) -> Tuple[List[str], List[Document]]:
+        summarizer = TableNTextSummarizer()
+        summarized_elements = [
+            summarizer.invoke(element=element)
+            for element in tqdm(
+                table_or_text_elements, desc=f"Summarizing {type} elements..."
+            )
+        ]
 
-        for chunk in chunks:
-            source, page = chunk.metadata.get("source"), chunk.metadata.get("page")
-            current_page_id = f"{source}:{page}"
-
-            # Reset chunk index if we're on a new page, else increment it.
-            current_chunk_index = current_chunk_index + 1 if current_page_id == last_page_id else 0
-
-            # Assign the computed ID to the chunk's metadata.
-            chunk.metadata["id"] = f"{current_page_id}:{current_chunk_index}"
-            last_page_id = current_page_id
-
-        return chunks
+        document_ids = [str(uuid.uuid4()) for _ in table_or_text_elements]
+        return document_ids, [
+            Document(
+                page_content=element,
+                metadata={
+                    "document_id": document_ids[idx],
+                    "filename": pdf_filename,
+                    "type": type,
+                },
+            )
+            for idx, element in enumerate(summarized_elements)
+        ]

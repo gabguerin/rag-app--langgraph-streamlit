@@ -4,11 +4,16 @@ Each node in our graph is simply a function that:
 (2) Modifies state
 (3) Write the modified state to the state schema (dict)
 """
+
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from backend.chat_models import RetrievalAugmentedGenerator, RetrievalGrader, QuestionRewriter
-from backend.vectorstore import VectorStore
+from app import db
+from backend.chat_models import (
+    RetrievalAugmentedGenerator,
+    RetrievalGrader,
+    QuestionRewriter,
+)
 from backend.rag_graph.state import State
 
 
@@ -25,14 +30,12 @@ def retrieve(state: State):
     print("---RETRIEVE---")
     question = state["question"]
 
-    retriever = VectorStore()
     # Write retrieved documents to documents key in state
-    documents = retriever.retrieve(question)
+    documents = db.retrieve(question)
     return {"documents": documents}
 
 
 def rewrite(state: State):
-
     """
     Transform the query to produce a better question.
 
@@ -95,7 +98,9 @@ def grade_documents(state: State):
     filtered_documents = []
     web_search = "No"
     for document in documents:
-        grade = retrieval_grader.invoke(document=document, question=question)["binary_score"]
+        grade = retrieval_grader.invoke(document=document, question=question)[
+            "binary_score"
+        ]
         # Document relevant
         if grade.lower() == "yes":
             print("---GRADE: DOCUMENT RELEVANT---")

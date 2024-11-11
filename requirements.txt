@@ -1,4 +1,4 @@
-bs4
+black
 langchain
 langchain-chroma
 langchain_community
@@ -7,7 +7,9 @@ langchain-ollama
 langgraph
 nomic[local]
 ollama
+pdf2image
 pypdf
+python-dotenv
 scikit-learn
 streamlit
 tavily-python

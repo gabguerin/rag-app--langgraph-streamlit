@@ -1,10 +1,10 @@
 # pages/chat.py
-import json
-
 import streamlit as st
 from backend.rag_graph.graph import graph
+from backend.vectorstore import PDFVectorstore
 
-def show():
+
+def show(db: PDFVectorstore):
     st.title("Oxfam Chatbot")
 
     # Initialize chat history
@@ -25,10 +25,7 @@ def show():
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            inputs = {
-                "question": prompt,
-                "max_retries": 3
-            }
+            inputs = {"question": prompt, "max_retries": 3}
             for event in graph.stream(inputs, stream_mode="values"):
                 print(event)
 

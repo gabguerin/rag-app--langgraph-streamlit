@@ -37,7 +37,9 @@ Réponse :"""
 
     def invoke(self, documents: List[Document], question: str) -> str:
         documents_txt = format_documents(documents)
-        rag_prompt_formatted = self.rag_prompt.format(context=documents_txt, question=question)
+        rag_prompt_formatted = self.rag_prompt.format(
+            context=documents_txt, question=question
+        )
         result = self.llm.invoke([HumanMessage(content=rag_prompt_formatted)])
         print(result.content)
         return result.content
@@ -55,12 +57,8 @@ Voici la question initiale :
 Formulez une question améliorée, soyez concis, seule la nouvelle question doit etre repondu :"""
 
     def invoke(self, question: str):
-        prompt_formatted = self.prompt.format(
-            question=question
-        )
-        result = self.llm.invoke(
-            [HumanMessage(content=prompt_formatted)]
-        )
+        prompt_formatted = self.prompt.format(question=question)
+        result = self.llm.invoke([HumanMessage(content=prompt_formatted)])
         print(result.content)
         return result.content
 
@@ -79,15 +77,14 @@ Si le document contient des mots-clés ou des informations sémantiques liées �
 Retournez un JSON avec une seule clé, `binary_score`, qui est 'oui' ou 'non' pour indiquer si le document contient des informations pertinentes pour la question."""
 
     def invoke(self, document: Document, question: str):
-        prompt_formatted = self.prompt.format(
-            document=document, question=question
-        )
+        prompt_formatted = self.prompt.format(document=document, question=question)
         result = self.llm.invoke(
             [SystemMessage(content=self.instructions)]
             + [HumanMessage(content=prompt_formatted)]
         )
         print(json.loads(result.content))
         return json.loads(result.content)
+
 
 class HallucinationGrader:
 
@@ -127,6 +124,7 @@ Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour i
         )
         return json.loads(result.content)
 
+
 class AnswerGrader:
 
     def __init__(self):
@@ -155,14 +153,13 @@ Expliquez votre raisonnement étape par étape pour justifier votre évaluation.
 Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour indiquer si la RÉPONSE D'ÉTUDIANT respecte les critères, et une clé `explanation` qui contient l'explication de la note."""
 
     def invoke(self, question: str, generation: str):
-        prompt_formatted = self.prompt.format(
-            question=question, generation=generation
-        )
+        prompt_formatted = self.prompt.format(question=question, generation=generation)
         result = self.llm.invoke(
             [SystemMessage(content=self.instructions)]
             + [HumanMessage(content=prompt_formatted)]
         )
         return json.loads(result.content)
+
 
 class Router:
 
@@ -182,3 +179,16 @@ Retournez un JSON avec une seule clé `datasource`, qui est 'websearch' ou 'vect
             + [HumanMessage(content=question)]
         )
         return json.loads(result.content)
+
+
+class TableNTextSummarizer:
+
+    def __init__(self):
+        self.llm = ChatOllama(model=MODEL_NAME, temperature=0)
+        self.prompt = """Vous êtes un expert dans le résumé de texte et de tables.
+        Fournissez un résumé concis de tables et de textes. Exemple de texte ou table: {element}"""
+
+    def invoke(self, element: str):
+        prompt_formatted = self.prompt.format(element=element)
+        result = self.llm.invoke([HumanMessage(content=prompt_formatted)])
+        return result.content

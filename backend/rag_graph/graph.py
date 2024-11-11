@@ -1,9 +1,19 @@
 from langgraph.constants import END
 from langgraph.graph import StateGraph
 
-from backend.rag_graph.edges import route_question, decide_to_generate, grade_generation_v_documents_and_question
+from backend.rag_graph.edges import (
+    route_question,
+    decide_to_generate,
+    grade_generation_v_documents_and_question,
+)
 from backend.rag_graph.state import State
-from backend.rag_graph.nodes import web_search, retrieve, grade_documents, generate, rewrite
+from backend.rag_graph.nodes import (
+    web_search,
+    retrieve,
+    grade_documents,
+    generate,
+    rewrite,
+)
 
 workflow = StateGraph(State)
 
@@ -49,11 +59,11 @@ simple_workflow = StateGraph(State)
 simple_workflow.set_entry_point("retrieve")
 
 simple_workflow.add_node("retrieve", retrieve)
-simple_workflow.add_node("rewrite", rewrite)
+# simple_workflow.add_node("rewrite", rewrite)
 simple_workflow.add_node("generate", generate)
 
-simple_workflow.add_edge("retrieve", "rewrite")
-simple_workflow.add_edge("rewrite", "generate")
+simple_workflow.add_edge("retrieve", "generate")
+# simple_workflow.add_edge("rewrite", "generate")
 simple_workflow.add_edge("generate", END)
 
 # Compile
