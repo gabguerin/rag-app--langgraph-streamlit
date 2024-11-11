@@ -1,0 +1,17 @@
+black
+langchain
+langchain-chroma
+langchain_community
+langchain-nomic
+langchain-ollama
+langgraph
+nomic[local]
+ollama
+pdf2image
+pypdf
+python-dotenv
+scikit-learn
+streamlit
+tavily-python
+tiktoken
+unstructured[all-docs]
