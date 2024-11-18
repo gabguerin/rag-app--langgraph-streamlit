@@ -23,4 +23,4 @@ with st.sidebar:
 if st.session_state.page == "Chat":
     chat.show()
 elif st.session_state.page == "Database":
-    database.show(db)
+    database.show()
