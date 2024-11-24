@@ -23,10 +23,10 @@ retrieval_augmented_generator:
 multi_modal_summarizer:
   prompt:
     fra: |
-      "Vous êtes un expert dans le résumé de texte et de tables. Fournissez un résumé concis de tables et de textes. Exemple de texte ou table: \n
+      "Vous êtes un expert dans le résumé de tables. Fournissez un résumé concis de tables. Ajoutez la table sous format Markdown apres l'avoir resume. Exemple de table: \n
       {element}"
     eng: |
-      "You are an expert in text and table summarization. Give a complete and concise summary of table and texts. Example of text or table: \n
+      "You are an expert in table summarization. Give a complete and concise summary of table. Add the table in Markdown format after the summary. Example of table: \n
       {element}"
   prompt_inputs:
     - element

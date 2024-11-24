@@ -34,8 +34,12 @@ class LLM:
             model=self.model_name,
             messages=[
                 {
+                    "role": "system",
+                    "content": self.instructions,
+                },
+                {
                     "role": "user",
-                    "content": self.instructions + "\n\n" + formatted_prompt,
+                    "content": formatted_prompt,
                 },
             ],
         )["message"]["content"]
@@ -47,7 +51,7 @@ class LLM:
 
 
 # Load model configs
-with open("backend/chat_models/model_configs.yml") as f:
+with open("backend/chat_models/model_configs.yml", "r", encoding="utf-8") as f:
     model_configs = yaml.safe_load(f)
 
 # Instantiate chat models from config

@@ -1,41 +1,50 @@
 # pages/database.py
-import os
 from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
-from streamlit_extras.stylable_container import stylable_container
 
 from backend.vectorstore import MultiModalVectorstore
 
 db = MultiModalVectorstore()
 
+BOOK_EMOJI_SHORTCODES = [
+    ":closed_book:",
+    ":green_book:",
+    ":blue_book:",
+    ":orange_book:",
+]
+
 
 def show():
-    st.title("Uploaded Files")
+    st.title(":books: Uploaded Files")
 
     # Ensure the directory exists
     p = Path("./database/documents")
     p.mkdir(parents=True, exist_ok=True)
 
     # List existing files
-    for file_path in p.rglob("*"):
+    for idx, file_path in enumerate(p.rglob("*")):
         nb_processed_pages, nb_pages = get_number_of_processed_pages(file_path)
-        with stylable_container(
-            key=f"file-{file_path.name}",
-            css_styles="""{"border": "1px solid #ccc", "padding": "10px"}""",
-        ):
-            col1, col2, col3 = st.columns((4, 1, 1))
-            col1.write(file_path.name)
-            with col2:
-                text_color = "green" if nb_processed_pages == nb_pages else "red"
+        with st.container(border=True):
+            col1, col2 = st.columns((4, 1), vertical_alignment="center")
+            with col1:
                 st.write(
-                    f":{text_color}[{nb_processed_pages}/{nb_pages} pages processed]"
+                    f"{BOOK_EMOJI_SHORTCODES[idx%len(BOOK_EMOJI_SHORTCODES)]} {file_path.name}"
                 )
-            with col3:
+                text_color = "green" if nb_processed_pages == nb_pages else "red"
+                st.caption(
+                    f":{text_color}[{nb_processed_pages}/{nb_pages} uploaded pages]"
+                )
+            with col2:
+                disable_button = nb_processed_pages == nb_pages
                 # Use a session state flag to trigger re-upload
-                if st.button("Re-Upload", key=f"reupload-{file_path.name}"):
+                if st.button(
+                    "Re-Upload",
+                    key=f"reupload-{file_path.name}",
+                    disabled=disable_button,
+                ):
                     st.session_state["file_reuploaded"] = file_path
                     st.rerun()  # Rerun app to trigger reupload
 
@@ -94,10 +103,24 @@ def upload_file(pdf_filepath: Path):
 
 
 def get_number_of_processed_pages(pdf_filepath: Path):
-    nb_pages = len(PdfReader(pdf_filepath).pages)
-    nb_processed_pages = 0
-    for i in range(nb_pages):
-        if not db.is_document_stored(pdf_filepath.name, i):
-            break
-        nb_processed_pages = i
-    return nb_processed_pages, nb_pages
+    """Returns the number of processed and total pages in a PDF file.
+
+    Args:
+        pdf_filepath (Path): Path to the PDF file.
+
+    Returns:
+        tuple: (number of processed pages, total number of pages)
+    """
+    pdf_reader = PdfReader(pdf_filepath)
+    total_pages = len(pdf_reader.pages)
+
+    processed_pages = next(
+        (
+            i
+            for i in range(total_pages)
+            if not db.is_document_stored(pdf_filepath.name, i)
+        ),
+        total_pages,
+    )
+
+    return processed_pages, total_pages
