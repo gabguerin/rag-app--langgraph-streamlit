@@ -1,6 +1,6 @@
 """Each edge routes between nodes in the graph."""
 
-from backend.chat_models import Router, HallucinationGrader, AnswerGrader
+from backend.chat_models.llms import router, hallucination_grader, answer_grader
 from backend.rag_graph.state import State
 
 
@@ -16,8 +16,7 @@ def route_question(state: State):
     """
 
     print("---ROUTE QUESTION---")
-    router = Router()
-    source = router.invoke(question=state["question"])["datasource"]
+    source = router.invoke(inputs={"question": state["question"]})["datasource"]
     if source == "websearch":
         print("---ROUTE QUESTION TO WEB SEARCH---")
         return "websearch"
@@ -68,9 +67,8 @@ def grade_generation_v_documents_and_question(state: State):
     generation = state["generation"]
     max_retries = state.get("max_retries", 3)  # Default to 3 if not provided
 
-    hallucination_grader = HallucinationGrader()
     result = hallucination_grader.invoke(
-        documents=documents, generation=generation.content
+        inputs={"documents": documents, "generation": generation}
     )
     print(f"---EXPLANATION: {result['explanation']}---")
 
@@ -81,9 +79,8 @@ def grade_generation_v_documents_and_question(state: State):
         # Check question-answering
         print("---GRADE GENERATION vs QUESTION---")
         # Test using question and generation from above
-        answer_grader = AnswerGrader()
         answer_grader_result = answer_grader.invoke(
-            question=question, generation=generation.content
+            inputs={"question": question, "generation": generation}
         )
         grade = answer_grader_result["binary_score"]
         if grade == "yes":

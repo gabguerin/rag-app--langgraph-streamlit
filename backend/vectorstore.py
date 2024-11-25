@@ -1,4 +1,5 @@
 import uuid
+from io import BytesIO
 from pathlib import Path
 from typing import List, Tuple
 
@@ -8,7 +9,7 @@ from langchain_nomic import NomicEmbeddings
 from tqdm import tqdm
 from unstructured.partition.pdf import partition_pdf
 
-from backend.chat_models import TableNTextSummarizer
+from backend.chat_models.llms import summarizer
 
 DOCUMENTS_PATH = Path("database/documents")
 VECTORSTORE_PATH = "database/vectorstore"
@@ -17,7 +18,7 @@ OUTPUT_IMAGES_PATH = "database/output_images"
 EMBEDDING_MODEL_NAME = "nomic-embed-text-v1.5"
 
 
-class PDFVectorstore:
+class MultiModalVectorstore:
 
     def __init__(self):
         self.documents_path = DOCUMENTS_PATH
@@ -30,34 +31,23 @@ class PDFVectorstore:
             persist_directory=self.vectorstore_path,
             embedding_function=self.embedding_function,
         )
-        self.update_vectorstore()
-
         self.retriever = self.vectorstore.as_retriever(k=3)
 
     def retrieve(self, query: str) -> list[Document]:
-        if not self.retriever:
-            raise ValueError("Retriever has not been initialized.")
         return self.retriever.invoke(query)
 
-    def update_vectorstore(self) -> None:
-        for pdf_filepath in self.documents_path.rglob("*.pdf"):
-            pdf_filename = pdf_filepath.name
-            print("Processing " + pdf_filename)
-            # Check if the document has already been processed
-            if not self._is_document_stored(pdf_filename):
-                self._add_new_file_to_vectorstore(pdf_filename)
-
-    def _is_document_stored(self, pdf_filename: str) -> bool:
+    def is_document_stored(self, pdf_filename: str, page_number: int) -> bool:
         """Check if a PDF document is already stored in the document store by filename."""
         stored_docs = self.vectorstore.similarity_search(
-            "", filter={"filename": pdf_filename}
+            "", filter={"page_id": f"{pdf_filename}-{page_number}"}
         )
-        print(stored_docs)
         return len(stored_docs) > 0
 
-    def _add_new_file_to_vectorstore(self, pdf_filename: str):
+    def add_new_pdf_page_to_vectorstore(
+        self, pdf_page: BytesIO, pdf_filename: str, page_number: int
+    ):
         raw_pdf_elements = partition_pdf(
-            filename=self.documents_path / pdf_filename,
+            file=pdf_page,
             extract_images_in_pdf=False,
             infer_table_structure=True,
             chunking_strategy="by_title",
@@ -69,45 +59,53 @@ class PDFVectorstore:
 
         table_elements, text_elements = [], []
         for element in raw_pdf_elements:
-            print(str(element))
             if "documents.elements.Table" in str(type(element)):
                 table_elements.append(str(element))
             elif "documents.elements.CompositeElement" in str(type(element)):
                 text_elements.append(str(element))
 
-        table_ids, table_chunks = self._summarize_table_or_text_elements(
-            table_elements, pdf_filename=pdf_filename, element_type="table"
+        # Merge all the text elements of one page into a single document
+        page_document = Document(
+            page_content="\n".join(text_elements),
+            metadata={
+                "document_id": f"{pdf_filename}-{page_number}",
+                "filename": pdf_filename,
+                "type": "text",
+            },
         )
-        text_ids, text_chunks = self._summarize_table_or_text_elements(
-            text_elements, pdf_filename=pdf_filename, element_type="text"
+
+        table_ids, summarized_table_elements = self._summarize_table_elements(
+            table_elements, pdf_filename=pdf_filename, page_number=page_number
         )
 
         self.vectorstore.add_documents(
-            table_chunks + text_chunks, ids=table_ids + text_ids
+            [page_document] + summarized_table_elements,
+            ids=[f"{pdf_filename}-{page_number}"] + table_ids,
         )
 
     @staticmethod
-    def _summarize_table_or_text_elements(
-        table_or_text_elements: List[str], pdf_filename: str, element_type: str
+    def _summarize_table_elements(
+        table_elements: List[str], pdf_filename: str, page_number: int
     ) -> Tuple[List[str], List[Document]]:
-        summarizer = TableNTextSummarizer()
-        summarized_elements = [
-            summarizer.invoke(element=element)
+        summarized_tables = [
+            summarizer.invoke(inputs={"element": element})
             for element in tqdm(
-                table_or_text_elements,
-                desc=f"Summarizing {element_type} elements of {pdf_filename}...",
+                table_elements,
+                desc=f"Summarizing table elements of {pdf_filename}...",
             )
         ]
 
-        document_ids = [str(uuid.uuid4()) for _ in table_or_text_elements]
+        document_ids = [
+            f"{pdf_filename}-{page_number}-{idx}" for idx in range(len(table_elements))
+        ]
         return document_ids, [
             Document(
                 page_content=element,
                 metadata={
                     "document_id": document_ids[idx],
                     "filename": pdf_filename,
-                    "type": element_type,
+                    "type": "table",
                 },
             )
-            for idx, element in enumerate(summarized_elements)
+            for idx, element in enumerate(summarized_tables)
         ]

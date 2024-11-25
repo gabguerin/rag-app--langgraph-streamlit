@@ -12,6 +12,7 @@ pypdf
 python-dotenv
 scikit-learn
 streamlit
+streamlit-extras
 tavily-python
 tiktoken
 unstructured[all-docs]

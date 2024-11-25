@@ -8,13 +8,10 @@ Each node in our graph is simply a function that:
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-from backend.chat_models import (
-    RetrievalAugmentedGenerator,
-    RetrievalGrader,
-    QuestionRewriter,
-)
+from backend.chat_models.llms import rag_model, retrieval_grader, rewriter
 from backend.rag_graph.state import State
-from backend.vectorstore import PDFVectorstore
+from backend.utils import format_documents
+from backend.vectorstore import MultiModalVectorstore
 
 
 def retrieve(state: State):
@@ -31,7 +28,7 @@ def retrieve(state: State):
     question = state["question"]
 
     # Open Database
-    db = PDFVectorstore()
+    db = MultiModalVectorstore()
     # Write retrieved documents to documents key in state
     documents = db.retrieve(question)
     return {"documents": documents}
@@ -52,8 +49,7 @@ def rewrite(state: State):
     question = state["question"]
 
     # RAG generation
-    rewriter = QuestionRewriter()
-    new_question = rewriter.invoke(question=question)
+    new_question = rewriter.invoke(inputs={"question": question})
     return {"question": new_question}
 
 
@@ -73,8 +69,9 @@ def generate(state: State):
     loop_step = state.get("loop_step", 0)
 
     # RAG generation
-    rag = RetrievalAugmentedGenerator()
-    generation = rag.invoke(documents=documents, question=question)
+    generation = rag_model.invoke(
+        {"context": format_documents(documents), "question": question}
+    )
     return {"generation": generation, "loop_step": loop_step + 1}
 
 
@@ -94,15 +91,13 @@ def grade_documents(state: State):
     question = state["question"]
     documents = state["documents"]
 
-    retrieval_grader = RetrievalGrader()
-
     # Score each doc
     filtered_documents = []
     web_search = "No"
     for document in documents:
-        grade = retrieval_grader.invoke(document=document, question=question)[
-            "binary_score"
-        ]
+        grade = retrieval_grader.invoke(
+            inputs={"document": document, "question": question}
+        )["binary_score"]
         # Document relevant
         if grade.lower() == "yes":
             print("---GRADE: DOCUMENT RELEVANT---")

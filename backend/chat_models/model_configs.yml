@@ -1,0 +1,158 @@
+retrieval_augmented_generator:
+  prompt:
+    fra: |
+      "Vous êtes un assistant pour des tâches de question-réponse. Voici le contexte à utiliser pour répondre à la question :
+       {context} \n\n
+       Réfléchissez attentivement au contexte ci-dessus. Maintenant, examinez la question de l'utilisateur :
+       {question} \n\n
+       Fournissez une réponse à cette question en utilisant uniquement le contexte ci-dessus. Utilisez un maximum de trois phrases et gardez la réponse concise.
+       Réponse : \n\n"
+    eng: |
+      "You are an assistant for question-answering tasks. Here is the context to use for answering the question:
+      {context} \n\n
+      Think carefully about the above context. Now, examine the user's question:
+      {question} \n\n
+      Provide an answer to this question using only the context above. Use a maximum of three sentences and keep the response concise.
+      Answer: \n\n"
+  prompt_inputs:
+    - context
+    - question
+  instructions: null
+  format_json: false
+
+multi_modal_summarizer:
+  prompt:
+    fra: |
+      "Vous êtes un expert dans le résumé de tables. Fournissez un résumé concis de tables. Ajoutez la table sous format Markdown apres l'avoir resume. Exemple de table: \n
+      {element}"
+    eng: |
+      "You are an expert in table summarization. Give a complete and concise summary of table. Add the table in Markdown format after the summary. Example of table: \n
+      {element}"
+  prompt_inputs:
+    - element
+  instructions: null
+  format_json: false
+
+question_rewriter:
+  prompt:
+    fra: |
+      "Regardez l'entrée et essayez de raisonner sur l'intention / signification sous-jacente. \n 
+       Voici la question initiale :
+
+       {question} 
+
+       Formulez une question améliorée, soyez concis, seule la nouvelle question doit être répondue :"
+    eng: |
+      "Look at the input and try to reason about the underlying intent/meaning. \n
+       Here is the initial question:
+
+       {question}
+
+       Formulate an improved question, be concise, and only return the new question:"
+  prompt_inputs:
+    - question
+  instructions: null
+  format_json: false
+
+retrieval_grader:
+  prompt:
+    fra: |
+      "Voici le document récupéré : \n\n {document} \n\n Voici la question de l'utilisateur : \n\n {question}. 
+
+       Évaluez soigneusement et objectivement si le document contient au moins une information pertinente pour la question.
+
+       Retournez un JSON avec une seule clé, `binary_score`, qui est 'oui' ou 'non' pour indiquer si le document contient des informations pertinentes pour la question."
+    eng: |
+      "Here is the retrieved document: \n\n {document} \n\n Here is the user's question: \n\n {question}. 
+
+       Carefully and objectively evaluate whether the document contains at least one relevant piece of information for the question.
+
+       Return a JSON with a single key, `binary_score`, which is 'yes' or 'no' to indicate if the document contains relevant information for the question."
+  prompt_inputs:
+    - document
+    - question
+  instructions:
+    fra: |
+      "Vous êtes un correcteur évaluant la pertinence d'un document récupéré par rapport à une question posée.
+
+       Si le document contient des mots-clés ou des informations sémantiques liées à la question, évaluez-le comme pertinent."
+    eng: |
+      "You are a grader evaluating the relevance of a retrieved document against a given question.
+
+       If the document contains keywords or semantic information related to the question, evaluate it as relevant."
+  format_json: true
+
+hallucination_grader:
+  prompt:
+    fra: |
+      "FAITS : \n\n {documents} \n\n RÉPONSE D'ÉTUDIANT : {generation}. 
+
+       Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour indiquer si la RÉPONSE D'ÉTUDIANT est fondée sur les FAITS, et une clé `explanation` qui contient l'explication de la note."
+    eng: |
+      "FACTS: \n\n {documents} \n\n STUDENT'S ANSWER: {generation}. 
+
+       Return a JSON with two keys: `binary_score` which is 'yes' or 'no' to indicate if the STUDENT'S ANSWER is grounded in the FACTS, and an `explanation` key containing the reasoning for the grade."
+  prompt_inputs:
+    - documents
+    - generation
+  instructions:
+    fra: |
+      "Vous êtes un enseignant notant un quiz. 
+
+       Vous recevrez des FAITS et une RÉPONSE D'ÉTUDIANT. 
+
+       Assurez-vous que la RÉPONSE D'ÉTUDIANT est fondée sur les FAITS et ne contient pas d'informations 'hallucinées'."
+    eng: |
+      "You are a teacher grading a quiz. 
+
+       You will receive FACTS and a STUDENT'S ANSWER. 
+
+       Ensure that the STUDENT'S ANSWER is grounded in the FACTS and does not include 'hallucinated' information."
+  format_json: true
+
+answer_grader:
+  prompt:
+    fra: |
+      "QUESTION : \n\n {question} \n\n RÉPONSE D'ÉTUDIANT : {generation}. 
+
+       Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour indiquer si la RÉPONSE D'ÉTUDIANT respecte les critères, et une clé `explanation` qui contient l'explication de la note."
+    eng: |
+      "QUESTION: \n\n {question} \n\n STUDENT'S ANSWER: {generation}. 
+
+       Return a JSON with two keys: `binary_score` which is 'yes' or 'no' to indicate if the STUDENT'S ANSWER meets the criteria, and an `explanation` key containing the reasoning for the grade."
+  prompt_inputs:
+    - question
+    - generation
+  instructions:
+    fra: |
+      "Vous êtes un enseignant notant un quiz. 
+
+       Assurez-vous que la RÉPONSE D'ÉTUDIANT aide à répondre à la QUESTION."
+    eng: |
+      "You are a teacher grading a quiz. 
+
+       Ensure that the STUDENT'S ANSWER helps answer the QUESTION."
+  format_json: true
+
+router:
+  prompt:
+    fra: |
+      "Voici la question utilisateur : \n\n {question} 
+
+       Retournez un JSON avec une seule clé `datasource`, qui est 'websearch' ou 'vectorstore' en fonction de la question."
+    eng: |
+      "Here is the user's question: \n\n {question} 
+
+       Return a JSON with a single key `datasource`, which is 'websearch' or 'vectorstore' based on the question."
+  prompt_inputs:
+    - question
+  instructions:
+    fra: |
+      "Vous êtes un expert dans l'acheminement d'une question utilisateur vers une base de données vectorielle ou une recherche web.
+
+       Utilisez la base de données vectorielle pour des questions sur TotalEnergies en 2023, et la recherche web pour les autres."
+    eng: |
+      "You are an expert in routing a user's question to a vector database or web search.
+
+       Use the vector database for questions on TotalEnergies in 2023, and web search for others."
+  format_json: true
