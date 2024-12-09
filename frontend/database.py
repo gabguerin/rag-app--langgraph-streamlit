@@ -69,9 +69,9 @@ def show():
                     ):
                         # Use a session state flag to trigger re-upload
                         if st.button(
-                            ":arrows_counterclockwise:",
-                            help="Re-Upload",
-                            key=f"reupload-{file_path.name}",
+                            ":arrow_forward:",
+                            help="Resume",
+                            key=f"resume-{file_path.name}",
                             disabled=disable_button,
                         ):
                             st.session_state["file_reuploaded"] = file_path
