@@ -16,13 +16,9 @@ def route_question(state: State):
     """
 
     print("---ROUTE QUESTION---")
-    source = router.invoke(inputs={"question": state["question"]})["datasource"]
-    if source == "websearch":
-        print("---ROUTE QUESTION TO WEB SEARCH---")
-        return "websearch"
-    elif source == "vectorstore":
-        print("---ROUTE QUESTION TO RAG---")
-        return "vectorstore"
+    result = router.invoke(inputs={"question": state["question"]})
+    print(f"RESULT: {result}")
+    return result["relevant"]
 
 
 def decide_to_generate(state: State):

@@ -3,6 +3,7 @@ from langchain_openai import ChatOpenAI
 
 grade_prompt_retrieval_relevancy = hub.pull("langchain-ai/rag-document-relevance")
 
+
 def retrieval_relevancy_evaluator(run, example) -> dict:
     """
     A simple evaluator for document relevance
@@ -19,8 +20,7 @@ def retrieval_relevancy_evaluator(run, example) -> dict:
     answer_grader = grade_prompt_retrieval_relevancy | llm
 
     # Get score
-    score = answer_grader.invoke({"question":input_question,
-                                  "documents":contexts})
+    score = answer_grader.invoke({"question": input_question, "documents": contexts})
     score = score["Score"]
 
     return {"key": "document_relevance", "score": score}

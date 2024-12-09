@@ -30,7 +30,7 @@ def retrieve(state: State):
     # Open Database
     db = MultiModalVectorstore()
     # Write retrieved documents to documents key in state
-    documents = db.retrieve(question)
+    documents = db.retrieve_documents(question)
     return {"documents": documents}
 
 
@@ -68,11 +68,34 @@ def generate(state: State):
     documents = state["documents"]
     loop_step = state.get("loop_step", 0)
 
+    context = (
+        "Pour répondre a cette question je me suis aidé des documents :\n- "
+        + ",\n- ".join([doc.metadata["document_id"] for doc in documents])
+    )
     # RAG generation
     generation = rag_model.invoke(
         {"context": format_documents(documents), "question": question}
     )
-    return {"generation": generation, "loop_step": loop_step + 1}
+    return {"generation": generation + "\n\n" + context, "loop_step": loop_step + 1}
+
+
+def generate_question_not_relevant(state: State):
+    """
+    Generate answer using RAG on retrieved documents
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): New key added to state, generation, that contains LLM generation
+    """
+    print("---QUESTION-NOT-RELEVANT---")
+    loop_step = state.get("loop_step", 0)
+
+    return {
+        "generation": "Desole mais la question posee ne correspond pas a mon domaine d'expertise.",
+        "loop_step": loop_step + 1,
+    }
 
 
 def grade_documents(state: State):

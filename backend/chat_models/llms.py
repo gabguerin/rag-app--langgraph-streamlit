@@ -3,8 +3,14 @@ from typing import List
 
 import ollama
 import yaml
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
 
 MODEL_NAME = "llama3.2:3b-instruct-fp16"
+
+
+# Load env variables
+load_dotenv()
 
 
 class LLM:
@@ -22,28 +28,28 @@ class LLM:
         self.instructions = instructions or ""
         self.format_json = format_json
 
-        self.model_name = model_name
+        self.chat_model = ChatOpenAI(
+            model="gpt-3.5-turbo",
+            temperature=0,
+        )
 
-    def invoke(self, inputs: dict[str]):
+    def invoke(self, inputs: dict[str, str]) -> str:
         if len(set(self.prompt_inputs) - set(list(inputs.keys()))) > 0:
             raise ValueError(f"Input dict should contain {self.prompt_inputs} keys")
         formatted_prompt = self.prompt.format(**inputs)
 
-        print(f"Formatted prompt: {formatted_prompt}")
-        result = ollama.chat(
-            model=self.model_name,
-            messages=[
-                {
-                    "role": "system",
-                    "content": self.instructions,
-                },
-                {
-                    "role": "user",
-                    "content": formatted_prompt,
-                },
+        result = self.chat_model.invoke(
+            input=[
+                (
+                    "system",
+                    self.instructions,
+                ),
+                (
+                    "user",
+                    formatted_prompt,
+                ),
             ],
-        )["message"]["content"]
-        print(f"Result {result}")
+        ).content
 
         if self.format_json:
             return json.loads(result)
@@ -51,7 +57,7 @@ class LLM:
 
 
 # Load model configs
-with open("backend/chat_models/model_configs.yml", "r", encoding="utf-8") as f:
+with open("backend/chat_models/system_instructions.yml", "r", encoding="utf-8") as f:
     model_configs = yaml.safe_load(f)
 
 # Instantiate chat models from config

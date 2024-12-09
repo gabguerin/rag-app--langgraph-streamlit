@@ -1,4 +1,5 @@
 black
+giskard[llm]
 langchain
 langchain-chroma
 langchain_community

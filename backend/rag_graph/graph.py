@@ -13,6 +13,7 @@ from backend.rag_graph.nodes import (
     grade_documents,
     generate,
     rewrite,
+    # generate_question_not_relevant,
 )
 
 workflow = StateGraph(State)
@@ -61,10 +62,24 @@ simple_workflow.set_entry_point("retrieve")
 simple_workflow.add_node("retrieve", retrieve)
 # simple_workflow.add_node("rewrite", rewrite)
 simple_workflow.add_node("generate", generate)
+# simple_workflow.add_node(
+#    "generate_question_not_relevant", generate_question_not_relevant
+# )
+
+# Build graph
+# workflow.set_conditional_entry_point(
+#     route_question,
+#     {
+#         "yes": "retrieve",
+#         "no": "question_not_relevant",
+#     },
+# )
 
 simple_workflow.add_edge("retrieve", "generate")
+# simple_workflow.add_edge("question_not_relevant", "generate_question_not_relevant")
 # simple_workflow.add_edge("rewrite", "generate")
 simple_workflow.add_edge("generate", END)
+# simple_workflow.add_edge("generate_question_not_relevant", END)
 
 # Compile
 graph = simple_workflow.compile()
