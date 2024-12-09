@@ -23,8 +23,7 @@ def answer_hallucination_evaluator(run, example) -> dict:
     answer_grader = grade_prompt_hallucinations | llm
 
     # Get score
-    score = answer_grader.invoke({"documents": contexts,
-                                  "student_answer": prediction})
+    score = answer_grader.invoke({"documents": contexts, "student_answer": prediction})
     score = score["Score"]
 
     return {"key": "answer_hallucination", "score": score}

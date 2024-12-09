@@ -1,7 +1,11 @@
 from langchain import hub
-from langchain_openai import ChatOpenAI
+from langsmith import evaluate
 
-grade_prompt_answer_accuracy = prompt = hub.pull("langchain-ai/rag-answer-vs-reference")
+from backend.chat_models.llms import rag_model
+from backend.evaluator.evaluator import RagEvaluator
+from backend.vectorstore import MultiModalVectorstore
+
+evaluator = RagEvaluator(student_llm=rag_model, db=MultiModalVectorstore())
 
 
 def answer_accuracy_evaluator(run, example) -> dict:
@@ -9,25 +13,14 @@ def answer_accuracy_evaluator(run, example) -> dict:
     A simple evaluator for RAG answer accuracy
     """
 
-    # Get question, ground truth answer, RAG chain answer
-    input_question = example.inputs["input_question"]
-    reference = example.outputs["output_answer"]
-    prediction = run.outputs["answer"]
-
-    # LLM grader
-    llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
-
-    # Structured prompt
-    answer_grader = grade_prompt_answer_accuracy | llm
-
     # Run evaluator
-    score = answer_grader.invoke(
-        {
-            "question": input_question,
-            "correct_answer": reference,
-            "student_answer": prediction,
-        }
+    score = evaluator.evaluate(
+        metric=hub.pull("langchain-ai/rag-answer-vs-reference"),
+        inputs={
+            "question": example.inputs["question"],
+            "correct_answer": example.outputs["output_answer"],
+            "student_answer": run.outputs["answer"],
+        },
     )
-    score = score["Score"]
 
     return {"key": "answer_v_reference_score", "score": score}
