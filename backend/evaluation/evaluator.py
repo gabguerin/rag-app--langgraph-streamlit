@@ -114,8 +114,8 @@ class RagEvaluator:
         Returns:
             Any: The evaluation score.
         """
-        answer_grader = metric | self._evaluator_llm  # Chain metric with evaluator LLM.
-        score = answer_grader.invoke(input=inputs)
+        evaluator = metric | self._evaluator_llm  # Chain metric with evaluator LLM.
+        score = evaluator.invoke(input=inputs)
         return score["Score"]
 
     # Individual evaluation methods
