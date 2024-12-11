@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import streamlit as st
+from pypdf import PdfReader
 from streamlit_extras.stylable_container import stylable_container
 
 from backend.vectorstore import MultiModalVectorstore
@@ -43,7 +44,7 @@ def show():
     # Load file data once
     load_files_and_data()
 
-    with st.container(border=True, height=260):
+    with st.container(border=True, height=300):
         for idx, file_info in enumerate(st.session_state.file_data):
             file_path = file_info["file_path"]
             nb_processed_pages = file_info["nb_processed_pages"]
@@ -135,7 +136,7 @@ def show():
                 {
                     "file_path": pdf_filepath,
                     "nb_processed_pages": 0,
-                    "nb_pages": 0,
+                    "nb_pages": len(PdfReader(pdf_filepath).pages),
                 }
             )
             st.rerun()
