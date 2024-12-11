@@ -2,4 +2,5 @@
 venv
 .idea
 database/*
+backend/evaluation/datasets/*
 **/__pycache__

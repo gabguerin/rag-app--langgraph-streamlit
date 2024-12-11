@@ -1,12 +1,9 @@
 import json
 from typing import List
 
-import ollama
 import yaml
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-
-MODEL_NAME = "llama3.2:3b-instruct-fp16"
 
 
 # Load env variables
@@ -20,7 +17,6 @@ class LLM:
         prompt_inputs: List[str],
         instructions: str | None,
         format_json: bool,
-        model_name: str = MODEL_NAME,
         language: str = "fra",
     ):
         self.prompt = prompt[language]
@@ -29,7 +25,7 @@ class LLM:
         self.format_json = format_json
 
         self.chat_model = ChatOpenAI(
-            model="gpt-3.5-turbo",
+            model="gpt-4-turbo",
             temperature=0,
         )
 

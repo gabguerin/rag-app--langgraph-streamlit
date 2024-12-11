@@ -53,6 +53,9 @@ class MultiModalVectorstore:
         """
         return self._retriever.invoke(query)
 
+    def get_all_documents_in_vectorstore(self) -> int:
+        return self._vectorstore.get()["documents"]
+
     def get_nb_stored_pages_in_vectorstore(
         self, pdf_filename: str, page_number: int
     ) -> int:
