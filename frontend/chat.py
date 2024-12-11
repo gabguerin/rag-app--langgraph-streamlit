@@ -4,11 +4,16 @@ from backend.rag_graph.graph import graph
 
 
 def show():
-    st.title("Oxfam Chatbot")
+    st.title(":robot_face: Oxfam Chatbot")
 
     # Initialize chat history
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": "Bonjour, posez-moi n'importe-quelle question sur une entreprise du SBF120 j'essaierai d'y repondre au mieux.",
+            }
+        ]
 
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
@@ -19,6 +24,7 @@ def show():
     if prompt := st.chat_input("Bonjour, comment puis-je vous aider ?"):
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
+
         # Display user message in chat message container
         with st.chat_message("user"):
             st.markdown(prompt)

@@ -43,18 +43,14 @@ def show():
                     color="#f9f9f9"
                 ),
             ):
-                col1, col2, col3 = st.columns((14, 1, 1), vertical_alignment="center")
+                col1, col2, col3 = st.columns((15, 1, 1), vertical_alignment="center")
                 with col1:
-                    col11, col12 = st.columns((4, 1), vertical_alignment="center")
-                    col11.write(
+                    col1.write(
                         f"{BOOK_EMOJI_SHORTCODES[idx%len(BOOK_EMOJI_SHORTCODES)]} {file_path.name}"
                     )
-                    text_color = "green" if nb_processed_pages == nb_pages else "red"
-                    col12.caption(
-                        f":{text_color}[{nb_processed_pages}/{nb_pages} uploaded pages]"
-                    )
                 with col2:
-                    disable_button = nb_processed_pages == nb_pages
+                    upload_completed = nb_processed_pages == nb_pages
+                    text_color = "green" if nb_processed_pages == nb_pages else "red"
                     with stylable_container(
                         key=f"reload_button_{idx}",
                         css_styles="""
@@ -69,17 +65,24 @@ def show():
                     ):
                         # Use a session state flag to trigger re-upload
                         if st.button(
-                            ":arrow_forward:",
-                            help="Resume",
-                            key=f"resume-{file_path.name}",
-                            disabled=disable_button,
+                            (
+                                ":material/download_done:"
+                                if upload_completed
+                                else ":material/upload:"
+                            ),
+                            help=(
+                                "Upload completed: " if upload_completed else "Upload: "
+                            )
+                            + f":{text_color}[{nb_processed_pages}/{nb_pages} uploaded pages]",
+                            key=f"upload-{file_path.name}",
+                            disabled=upload_completed,
                         ):
                             st.session_state["file_reuploaded"] = file_path
                             st.rerun()
 
                 with col3:
                     with stylable_container(
-                        key=f"remove_button_{idx}",
+                        key=f"delete_button_{idx}",
                         css_styles="""
                             button {{
                                 float: right;
@@ -91,7 +94,7 @@ def show():
                         ),
                     ):
                         if st.button(
-                            ":x:",
+                            ":material/delete:",
                             help="Delete",
                             key=f"delete-{file_path.name}",
                         ):

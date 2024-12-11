@@ -27,7 +27,7 @@ class RagEvaluator:
         """
         self._student_llm = student_llm
         self._db = db
-        self._evaluator_llm = ChatOpenAI(model="gpt-4o", temperature=0)  # Evaluator LLM for scoring.
+        self._evaluator_llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
 
     @traceable()
     def retrieve_docs(self, question: str) -> List[Document]:
@@ -87,7 +87,7 @@ class RagEvaluator:
         Returns:
             dict[str, Any]: The generated answer.
         """
-        response = self.get_answer(example["input_question"])
+        response = self.get_answer(example["question"])
         return {"answer": response["answer"]}
 
     def predict_rag_answer_with_context(self, example: dict) -> dict[str, Any]:
@@ -100,7 +100,7 @@ class RagEvaluator:
         Returns:
             dict[str, Any]: The generated answer and associated contexts.
         """
-        response = self.get_answer(example["input_question"])
+        response = self.get_answer(example["question"])
         return {"answer": response["answer"], "contexts": response["contexts"]}
 
     def evaluate(self, metric: Any, inputs: dict[str, str]) -> Any:
@@ -115,7 +115,7 @@ class RagEvaluator:
             Any: The evaluation score.
         """
         answer_grader = metric | self._evaluator_llm  # Chain metric with evaluator LLM.
-        score = answer_grader.invoke(**inputs)
+        score = answer_grader.invoke(input=inputs)
         return score["Score"]
 
     # Individual evaluation methods
@@ -134,7 +134,7 @@ class RagEvaluator:
             metric=hub.pull("langchain-ai/rag-answer-vs-reference"),
             inputs={
                 "question": example.inputs["question"],
-                "correct_answer": example.outputs["output_answer"],
+                "correct_answer": example.outputs["answer"],
                 "student_answer": run.outputs["answer"],
             },
         )
@@ -174,7 +174,7 @@ class RagEvaluator:
         score = self.evaluate(
             metric=hub.pull("langchain-ai/rag-answer-helpfulness"),
             inputs={
-                "question": example.inputs["input_question"],
+                "question": example.inputs["question"],
                 "student_answer": run.outputs["answer"],
             },
         )
@@ -194,7 +194,7 @@ class RagEvaluator:
         score = self.evaluate(
             metric=hub.pull("langchain-ai/rag-document-relevance"),
             inputs={
-                "question": example.inputs["input_question"],
+                "question": example.inputs["question"],
                 "documents": run.outputs["contexts"],
             },
         )
