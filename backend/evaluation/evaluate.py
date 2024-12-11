@@ -1,5 +1,3 @@
-import time
-
 from langsmith import evaluate
 
 from backend.chat_models.llms import rag_model
@@ -7,20 +5,19 @@ from backend.evaluation.evaluator import RagEvaluator
 from backend.vectorstore import MultiModalVectorstore
 
 if __name__ == "__main__":
-    evaluator = RagEvaluator(student_llm=rag_model, db=MultiModalVectorstore())
+    rag_evaluator = RagEvaluator(student_llm=rag_model, db=MultiModalVectorstore())
 
     evaluation_inputs = [
         (
-            evaluator.predict_rag_answer,
-            evaluator.answer_accuracy_evaluator,
+            rag_evaluator.answer_accuracy_evaluator,
             "answer-acc",
         ),
     ]
-    for target, evaluator, description in evaluation_inputs:
+    for metric_evaluator, description in evaluation_inputs:
         evaluate(
-            target,
+            rag_evaluator.run,
             data="OXFAM_dataset",
-            evaluators=[evaluator],
+            evaluators=[metric_evaluator],
             experiment_prefix=description,
             metadata={"version": "test"},
         )

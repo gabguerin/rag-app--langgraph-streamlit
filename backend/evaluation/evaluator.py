@@ -43,7 +43,9 @@ class RagEvaluator:
         return self._db.retrieve_documents(question)
 
     @traceable()
-    def invoke_llm(self, question: str, documents: List[Document]) -> dict[str, Any]:
+    def invoke_student_llm(
+        self, question: str, documents: List[Document]
+    ) -> dict[str, Any]:
         """
         Invoke the student LLM to generate an answer using the provided context.
 
@@ -64,7 +66,7 @@ class RagEvaluator:
         }
 
     @traceable()
-    def get_answer(self, question: str) -> dict[str, Any]:
+    def get_student_answer(self, question: str) -> dict[str, Any]:
         """
         Retrieve documents and generate an answer for the question.
 
@@ -75,22 +77,9 @@ class RagEvaluator:
             dict[str, Any]: The generated answer and associated contexts.
         """
         documents = self.retrieve_docs(question)
-        return self.invoke_llm(question, documents)
+        return self.invoke_student_llm(question, documents)
 
-    def predict_rag_answer(self, example: dict) -> dict[str, Any]:
-        """
-        Generate an answer without returning the associated context.
-
-        Args:
-            example (dict): Input example containing the question.
-
-        Returns:
-            dict[str, Any]: The generated answer.
-        """
-        response = self.get_answer(example["question"])
-        return {"answer": response["answer"]}
-
-    def predict_rag_answer_with_context(self, example: dict) -> dict[str, Any]:
+    def run(self, example: dict) -> dict[str, Any]:
         """
         Generate an answer and include the retrieved context.
 
@@ -100,7 +89,7 @@ class RagEvaluator:
         Returns:
             dict[str, Any]: The generated answer and associated contexts.
         """
-        response = self.get_answer(example["question"])
+        response = self.get_student_answer(example["question"])
         return {"answer": response["answer"], "contexts": response["contexts"]}
 
     def evaluate(self, metric: Any, inputs: dict[str, str]) -> Any:
