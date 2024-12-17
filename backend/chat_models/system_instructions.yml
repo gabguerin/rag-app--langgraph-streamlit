@@ -41,7 +41,7 @@ router:
       {question}
 
       Déterminez si cette question concerne les rapports financiers des entreprises du SBF120 ou leurs activités. 
-      Retournez un JSON avec la clé `relevant` valant 'oui' si elle est pertinente, sinon 'non'."
+      Retournez un JSON avec la clé `relevant` valant 'yes' si elle est pertinente, sinon 'no'."
   prompt_inputs:
     - question
   instructions: |

@@ -29,6 +29,10 @@ class LLM:
             model="gpt-3.5-turbo",
             temperature=0,
         )
+        if self.format_json:
+            self.chat_model = self.chat_model.bind(
+                response_format={"type": "json_object"}
+            )
 
     def invoke(self, inputs: dict[str, str]) -> str:
         if len(set(self.prompt_inputs) - set(list(inputs.keys()))) > 0:

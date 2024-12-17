@@ -63,9 +63,7 @@ simple_workflow = StateGraph(State)
 simple_workflow.add_node("retrieve", retrieve)
 simple_workflow.add_node("rewrite", rewrite)
 simple_workflow.add_node("generate", generate)
-simple_workflow.add_node(
-    "generate_question_not_relevant", generate_question_not_relevant
-)
+simple_workflow.add_node("question_not_relevant", generate_question_not_relevant)
 
 # Build graph
 simple_workflow.set_conditional_entry_point(
@@ -77,10 +75,9 @@ simple_workflow.set_conditional_entry_point(
 )
 
 simple_workflow.add_edge("retrieve", "rewrite")
-simple_workflow.add_edge("question_not_relevant", "generate_question_not_relevant")
 simple_workflow.add_edge("rewrite", "generate")
 simple_workflow.add_edge("generate", END)
-simple_workflow.add_edge("generate_question_not_relevant", END)
+simple_workflow.add_edge("question_not_relevant", END)
 
 # Compile
 graph = simple_workflow.compile()
