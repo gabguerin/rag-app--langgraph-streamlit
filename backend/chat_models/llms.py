@@ -26,7 +26,7 @@ class LLM:
         self.format_json = format_json
 
         self.chat_model = ChatOpenAI(
-            model="gpt-4-turbo",
+            model="gpt-3.5-turbo",
             temperature=0,
         )
 
