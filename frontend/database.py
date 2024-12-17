@@ -60,7 +60,7 @@ def show():
                     color="#f9f9f9"
                 ),
             ):
-                col1, col2, col3 = st.columns((15, 1, 1), vertical_alignment="center")
+                col1, col2, col3, col4 = st.columns((15, 1, 1, 1), vertical_alignment="center")
                 with col1:
                     col1.write(
                         f"{BOOK_EMOJI_SHORTCODES[idx % len(BOOK_EMOJI_SHORTCODES)]} {file_path.name}"
@@ -72,7 +72,6 @@ def show():
                         key=f"reload_button_{idx}",
                         css_styles="""
                             button {{
-                                float: right;
                                 border: 0;
                                 background-color: {color};
                             }}
@@ -101,7 +100,6 @@ def show():
                         key=f"delete_button_{idx}",
                         css_styles="""
                             button {{
-                                float: right;
                                 border: 0;
                                 background-color: {color};
                             }}
@@ -117,6 +115,28 @@ def show():
                             delete_file_from_database(db, file_path)
                             st.session_state.file_data.pop(idx)
                             st.rerun()
+
+                with col4:
+                    with stylable_container(
+                        key=f"download_button_{idx}",
+                        css_styles="""
+                            button {{
+                                border: 0;
+                                background-color: {color};
+                            }}
+                        """.format(
+                            color="#f9f9f9"
+                        ),
+                    ):
+                        with open(file_path, "rb") as pdf_file:
+                            st.download_button(
+                                label="",
+                                data=pdf_file,
+                                help="Download",
+                                icon=":material/download:",
+                                file_name=file_path.name,
+                                mime="application/pdf"
+                            )
 
     # Handle uploaded file
     uploaded_file = st.file_uploader(

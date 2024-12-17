@@ -5,6 +5,7 @@ langchain-chroma
 langchain_community
 langchain-nomic
 langchain-ollama
+langchain-openai
 langgraph
 nomic[local]
 ollama
