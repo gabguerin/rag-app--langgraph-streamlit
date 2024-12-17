@@ -1,282 +1,121 @@
 retrieval_augmented_generator:
   prompt:
     fra: |
-      "Vous êtes un assistant pour des tâches de question-réponse. Voici le contexte à utiliser pour répondre à la question :
-       {context} \n\n
-       Réfléchissez attentivement au contexte ci-dessus. Maintenant, examinez la question de l'utilisateur :
-       {question} \n\n
-       Fournissez une réponse à cette question en utilisant uniquement le contexte ci-dessus. Utilisez un maximum de trois phrases et gardez la réponse concise.
-       Si le contexte contient des tableaux, ajoutez un tableau en markdown repondant a la question avec des informations plus detailles.
-       Réponse : \n\n"
-    eng: |
-      "You are an assistant for question-answering tasks. Here is the context to use for answering the question:
-      {context} \n\n
-      Think carefully about the above context. Now, examine the user's question:
-      {question} \n\n
-      Provide an answer to this question using only the context above. Use a maximum of three sentences and keep the response concise.
-      Answer: \n\n"
+      "Vous êtes un assistant spécialisé dans l'analyse des rapports financiers des entreprises du SBF120. 
+      Voici le contexte extrait d'un rapport financier :
+      {context}
+
+      Réfléchissez attentivement aux informations fournies. Maintenant, examinez la question suivante :
+      {question}
+
+      Formulez une réponse claire et précise en utilisant uniquement le contexte extrait. 
+      Limitez votre réponse à trois phrases. Si des tableaux financiers sont mentionnés dans le contexte, fournissez un tableau Markdown clair et pertinent pour enrichir votre réponse.
+      
+      Réponse :\n\n"
   prompt_inputs:
     - context
     - question
-  instructions: null
+  instructions: |
+    "Vous êtes un expert des données financières. Fournissez une réponse concise et basée sur les informations extraites."
   format_json: false
 
 multi_modal_summarizer:
   prompt:
     fra: |
-      "Vous êtes un expert dans le résumé de tables. Fournissez un résumé concis de tables. Ajoutez la table sous format Markdown apres l'avoir resume. Exemple de table: \n
-      {element}"
-    eng: |
-      "You are an expert in table summarization. Give a complete and concise summary of table. Add the table in Markdown format after the summary. Example of table: \n
-      {element}"
+      "Vous êtes un spécialiste des résumés financiers. 
+      Voici une section extraite d'un rapport financier :
+      {element}
+
+      Résumez de manière concise les informations financières essentielles. 
+      Si des données chiffrées sont présentes, organisez-les sous forme de tableau en Markdown pour une meilleure lisibilité."
   prompt_inputs:
     - element
-  instructions: null
+  instructions: |
+    "Synthétisez les informations financières et structurez-les de façon claire et lisible."
   format_json: false
+
+router:
+  prompt:
+    fra: |
+      "Voici la question utilisateur :
+      {question}
+
+      Déterminez si cette question concerne les rapports financiers des entreprises du SBF120 ou leurs activités. 
+      Retournez un JSON avec la clé `relevant` valant 'yes' si elle est pertinente, sinon 'no'."
+  prompt_inputs:
+    - question
+  instructions: |
+    "Analysez si la question concerne les entreprises du SBF120 ou leurs données financières."
+  format_json: true
 
 question_rewriter:
   prompt:
     fra: |
-      "Regardez l'entrée et essayez de raisonner sur l'intention / signification sous-jacente. \n 
-       Voici la question initiale :
+      "Vous êtes un expert des rapports financiers des entreprises du SBF120. 
+      Reformulez la question suivante afin qu'elle soit adaptée à une recherche précise dans les rapports financiers :
 
-       {question} 
+      Question initiale :
+      {question}
 
-       Formulez une question améliorée, soyez concis, seule la nouvelle question doit être répondue :"
-    eng: |
-      "Look at the input and try to reason about the underlying intent/meaning. \n
-       Here is the initial question:
-
-       {question}
-
-       Formulate an improved question, be concise, and only return the new question:"
+      Nouvelle question améliorée :"
   prompt_inputs:
     - question
-  instructions: null
+  instructions: |
+    "Améliorez la question pour cibler les informations présentes dans les rapports financiers. Soyez précis et concis."
   format_json: false
 
 retrieval_grader:
   prompt:
     fra: |
-      "Voici le document récupéré : \n\n {document} \n\n Voici la question de l'utilisateur : \n\n {question}. 
+      "Document extrait :
+      {document}
 
-       Évaluez soigneusement et objectivement si le document contient au moins une information pertinente pour la question.
+      Question de l'utilisateur :
+      {question}
 
-       Retournez un JSON avec une seule clé, `binary_score`, qui est 'oui' ou 'non' pour indiquer si le document contient des informations pertinentes pour la question."
-    eng: |
-      "Here is the retrieved document: \n\n {document} \n\n Here is the user's question: \n\n {question}. 
-
-       Carefully and objectively evaluate whether the document contains at least one relevant piece of information for the question.
-
-       Return a JSON with a single key, `binary_score`, which is 'yes' or 'no' to indicate if the document contains relevant information for the question."
+      Évaluez si le document contient des informations pertinentes pour répondre à la question. 
+      Retournez un JSON avec la clé `binary_score` valant 'oui' ou 'non'."
   prompt_inputs:
     - document
     - question
-  instructions:
-    fra: |
-      "Vous êtes un correcteur évaluant la pertinence d'un document récupéré par rapport à une question posée.
-
-       Si le document contient des mots-clés ou des informations sémantiques liées à la question, évaluez-le comme pertinent."
-    eng: |
-      "You are a grader evaluating the relevance of a retrieved document against a given question.
-
-       If the document contains keywords or semantic information related to the question, evaluate it as relevant."
+  instructions: |
+    "Évaluez objectivement si le document contient des informations utiles et pertinentes pour la question."
   format_json: true
 
 hallucination_grader:
   prompt:
     fra: |
-      "FAITS : \n\n {documents} \n\n RÉPONSE D'ÉTUDIANT : {generation}. 
+      "FAITS extraits :
+      {documents}
 
-       Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour indiquer si la RÉPONSE D'ÉTUDIANT est fondée sur les FAITS, et une clé `explanation` qui contient l'explication de la note."
-    eng: |
-      "FACTS: \n\n {documents} \n\n STUDENT'S ANSWER: {generation}. 
+      Réponse générée :
+      {generation}
 
-       Return a JSON with two keys: `binary_score` which is 'yes' or 'no' to indicate if the STUDENT'S ANSWER is grounded in the FACTS, and an `explanation` key containing the reasoning for the grade."
+      Évaluez si la réponse est cohérente avec les faits extraits. Retournez un JSON avec deux clés : 
+      - `binary_score` : 'oui' ou 'non' pour indiquer si la réponse est correcte,
+      - `explanation` : une explication détaillée de la note."
   prompt_inputs:
     - documents
     - generation
-  instructions:
-    fra: |
-      "Vous êtes un enseignant notant un quiz. 
-
-       Vous recevrez des FAITS et une RÉPONSE D'ÉTUDIANT. 
-
-       Assurez-vous que la RÉPONSE D'ÉTUDIANT est fondée sur les FAITS et ne contient pas d'informations 'hallucinées'."
-    eng: |
-      "You are a teacher grading a quiz. 
-
-       You will receive FACTS and a STUDENT'S ANSWER. 
-
-       Ensure that the STUDENT'S ANSWER is grounded in the FACTS and does not include 'hallucinated' information."
+  instructions: |
+    "Vérifiez que la réponse est fondée sur les faits extraits et ne contient pas d'informations erronées ou inventées."
   format_json: true
 
 answer_grader:
   prompt:
     fra: |
-      "QUESTION : \n\n {question} \n\n RÉPONSE D'ÉTUDIANT : {generation}. 
+      "Question posée :
+      {question}
 
-       Retournez un JSON avec deux clés : `binary_score` qui est 'oui' ou 'non' pour indiquer si la RÉPONSE D'ÉTUDIANT respecte les critères, et une clé `explanation` qui contient l'explication de la note."
-    eng: |
-      "QUESTION: \n\n {question} \n\n STUDENT'S ANSWER: {generation}. 
+      Réponse générée :
+      {generation}
 
-       Return a JSON with two keys: `binary_score` which is 'yes' or 'no' to indicate if the STUDENT'S ANSWER meets the criteria, and an `explanation` key containing the reasoning for the grade."
+      Évaluez si la réponse est claire, précise et répond directement à la question posée. Retournez un JSON avec deux clés :
+      - `binary_score` : 'oui' ou 'non' pour indiquer si la réponse est correcte,
+      - `explanation` : une justification de votre évaluation."
   prompt_inputs:
     - question
     - generation
-  instructions:
-    fra: |
-      "Vous êtes un enseignant notant un quiz. 
-
-       Assurez-vous que la RÉPONSE D'ÉTUDIANT aide à répondre à la QUESTION."
-    eng: |
-      "You are a teacher grading a quiz. 
-
-       Ensure that the STUDENT'S ANSWER helps answer the QUESTION."
-  format_json: true
-
-router:
-  prompt:
-    fra: |
-      "Voici la question utilisateur : \n\n {question} 
-
-       Retournez un JSON avec une seule clé `relevant`, qui est 'yes' si la question correspond a votre domaine d'expertise et 'no' dans le cas contraire."
-    eng: |
-      "Here is the user's question: \n\n {question} 
-
-      Return a JSON response with a single key, `binary_score`, whose value is 'yes' if the question is in your domain of expertise, and 'no' otherwise.""
-  prompt_inputs:
-    - question
-  instructions:
-    fra: |
-      "Vous êtes un expert sur toutes questions relatives aux entreprises du SBF120. Le SBF 120 (Société des Bourses Françaises 120 Index) est un indice boursier français. L'indice est basé sur les 120 valeurs les plus actives cotées à Paris. Il comprend les 60 valeurs des indices CAC 40 et CAC Next 20 ainsi que 60 valeurs supplémentaires cotées au Premier Marché et au Second Marché d'Euronext Paris. La composition actuelle de l'indice, qui change fréquemment, est disponible sur le site web d'Euronext.
-      
-      Voici les 120 entreprises :
-
-      Accor (hospitality, hotels)
-      ADP (Aéroports de Paris) (airports, infrastructure)
-      Air France-KLM (aviation, airlines)
-      Air Liquide (industrial gases, chemicals)
-      Alstom (transport, railways)
-      Amundi (asset management, finance)
-      ArcelorMittal (steel, manufacturing)
-      Arkema (specialty chemicals)
-      Atos (IT services, consulting)
-      AXA (insurance, financial services)
-      BIC (consumer goods, stationery)
-      BioMérieux (healthcare, diagnostics)
-      BNP Paribas (banking, finance)
-      Bouygues (construction, telecommunications)
-      Capgemini (consulting, IT services)
-      Carrefour (retail, supermarkets)
-      Casino Guichard-Perrachon (retail, supermarkets)
-      CGG (geoscience, energy)
-      Crédit Agricole (banking, finance)
-      Dassault Aviation (aerospace, defense)
-      Dassault Systèmes (software, 3D design)
-      EDF (Électricité de France) (energy, utilities)
-      Engie (energy, utilities)
-      Eramet (mining, metals)
-      Eiffage (construction, infrastructure)
-      Elis (textile, hygiene)
-      EssilorLuxottica (eyewear, healthcare)
-      Euronext (stock exchange, finance)
-      Faurecia (automotive, components)
-      Fnac Darty (retail, electronics)
-      Gecina (real estate, REIT)
-      Getlink (transport, infrastructure)
-      Hermès (luxury goods, fashion)
-      Ipsen (pharmaceuticals, healthcare)
-      Icade (real estate, REIT)
-      Imerys (materials, minerals)
-      Kering (luxury goods, fashion)
-      Klépierre (real estate, shopping centers)
-      L'Oréal (cosmetics, beauty)
-      Legrand (electrical, automation)
-      LVMH (luxury goods, fashion)
-      Michelin (tires, automotive)
-      Nexans (cables, energy)
-      Orange (telecommunications, technology)
-      Orpea (healthcare, elderly care)
-      Pernod Ricard (beverages, alcohol)
-      Peugeot (Stellantis) (automotive, vehicles)
-      Publicis Groupe (advertising, marketing)
-      Renault (automotive, vehicles)
-      Rémy Cointreau (beverages, alcohol)
-      Safran (aerospace, defense)
-      Saint-Gobain (construction, materials)
-      Sanofi (pharmaceuticals, healthcare)
-      Schneider Electric (energy, automation)
-      SEB (consumer goods, appliances)
-      Société Générale (banking, finance)
-      Sodexo (food services, facilities)
-      Sopra Steria (consulting, IT services)
-      STMicroelectronics (semiconductors, technology)
-      Technip Energies (engineering, energy)
-      Teleperformance (outsourcing, customer service)
-      Thales (aerospace, defense)
-      TotalEnergies (energy, oil and gas)
-      Ubisoft (video games, entertainment)
-      Unibail-Rodamco-Westfield (real estate, shopping centers)
-      Valeo (automotive, components)
-      Vallourec (pipes, energy)
-      Veolia (water, waste management)
-      Vinci (construction, infrastructure)
-      Virbac (veterinary, healthcare)
-      Wendel (investment, finance)
-      Worldline (payments, technology)
-      Xilam Animation (entertainment, animation)
-      Albioma (renewable energy, utilities)
-      Alten (engineering, consulting)
-      Altran Technologies (engineering, consulting)
-      Americain (hospitality, tourism)
-      Beneteau (boat manufacturing, leisure)
-      Boiron (pharmaceuticals, homeopathy)
-      Chargeurs (textiles, materials)
-      CNP Assurances (insurance, finance)
-      Compagnie des Alpes (leisure, tourism)
-      Covivio (real estate, REIT)
-      Devoteam (IT services, consulting)
-      Direct Energie (energy, utilities)
-      Elior Group (food services, facilities)
-      Eram (retail, fashion)
-      Eurofins Scientific (laboratories, testing)
-      Gaztransport & Technigaz (energy, LNG)
-      Groupe Crit (staffing, HR)
-      Groupe Flo (hospitality, restaurants)
-      Iliad (telecommunications, broadband)
-      Interparfums (luxury goods, perfumes)
-      Jacquet Metal Service (metals, materials)
-      JCDecaux (advertising, outdoor media)
-      Lanson-BCC (beverages, champagne)
-      Latécoère (aerospace, defense)
-      Le Noble Age (healthcare, elderly care)
-      Lisi (aerospace, automotive)
-      Mersen (materials, energy)
-      Mercialys (real estate, shopping centers)
-      Metabolic Explorer (biotechnology, chemicals)
-      Nexity (real estate, housing)
-      NRJ Group (media, entertainment)
-      Pierre & Vacances (tourism, real estate)
-      Plastic Omnium (automotive, components)
-      Rothschild & Co (finance, investment banking)
-      Rubis (energy, storage)
-      Sartorius Stedim Biotech (biotechnology, healthcare)
-      Scor (reinsurance, finance)
-      SES-imagotag (technology, retail)
-      SMCP (retail, fashion)
-      Spie (engineering, infrastructure)
-      Technicolor Creative Studios (media, production)
-      Thermador Groupe (equipment, building materials)
-      Tikehau Capital (investment, finance)
-      Trigano (leisure vehicles, camping)
-      Ubisoft Entertainment (video games, software)
-      Voltalia (renewable energy, utilities)
-      Vilmorin & Cie (agriculture, seeds)
-
-      Votre tâche consiste à déterminer si une question donnée correspond a votre domaine d'expertise. Déterminez si la question relève de votre domaine d'expertise ou si elle concerne les entreprises du SBF120, leurs activités ou tout autre contexte pertinent les concernant."
-    eng: |
-      "You're an expert about the SBF120. The SBF 120 (Société des Bourses Françaises 120 Index) is a French stock market index. The index is based on the 120 most actively traded stocks listed in Paris. It includes all 60 stocks in the CAC 40 and CAC Next 20 indexes and 60 additional stocks listed on the Premier Marché and Second Marché under Euronext Paris. The current, frequently changing, index composition is available on the Euronext Web site.
-      
-      Your task is to determine if a given document is relevant to answering a question about the SBF120, the top French companies. Evaluate whether the question is in your domain of expertise or relates to SBF120 companies, their operations, or any relevant context about them.
+  instructions: |
+    "Assurez-vous que la réponse est correcte, pertinente et complète."
   format_json: true
