@@ -1,7 +1,9 @@
+import time
 from typing import List, Any
 
 from langchain import hub
 from langchain_core.documents import Document
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from langsmith import traceable
 
@@ -27,7 +29,7 @@ class RagEvaluator:
         """
         self._student_llm = student_llm
         self._db = db
-        self._evaluator_llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
+        self._evaluator_llm = ChatOllama(model="llama3.2:3b-instruct-fp16", temperature=0)
 
     @traceable()
     def retrieve_docs(self, question: str) -> List[Document]:
@@ -59,7 +61,6 @@ class RagEvaluator:
         response = self._student_llm.invoke(
             inputs={"context": format_documents(documents), "question": question}
         )
-
         return {
             "answer": response,
             "contexts": [doc.page_content for doc in documents],
@@ -90,6 +91,7 @@ class RagEvaluator:
             dict[str, Any]: The generated answer and associated contexts.
         """
         response = self.get_student_answer(example["question"])
+        time.sleep(10)   # Delay each generation to avoid rate limits of OpenAI
         return {"answer": response["answer"], "contexts": response["contexts"]}
 
     def evaluate(self, metric: Any, inputs: dict[str, str]) -> Any:

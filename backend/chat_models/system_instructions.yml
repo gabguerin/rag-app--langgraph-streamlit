@@ -6,6 +6,7 @@ retrieval_augmented_generator:
        Réfléchissez attentivement au contexte ci-dessus. Maintenant, examinez la question de l'utilisateur :
        {question} \n\n
        Fournissez une réponse à cette question en utilisant uniquement le contexte ci-dessus. Utilisez un maximum de trois phrases et gardez la réponse concise.
+       Si le contexte contient des tableaux, ajoutez un tableau en markdown repondant a la question avec des informations plus detailles.
        Réponse : \n\n"
     eng: |
       "You are an assistant for question-answering tasks. Here is the context to use for answering the question:
