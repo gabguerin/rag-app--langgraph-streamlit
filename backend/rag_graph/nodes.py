@@ -68,6 +68,8 @@ def generate(state: State):
     documents = state["documents"]
     loop_step = state.get("loop_step", 0)
 
+    rewritten_question = "Si je comprend bien votre question est :\n " + question
+
     context = (
         "Pour répondre a cette question je me suis aidé des documents :\n- "
         + ",\n- ".join([doc.metadata["document_id"] for doc in documents])
@@ -76,7 +78,10 @@ def generate(state: State):
     generation = rag_model.invoke(
         {"context": format_documents(documents), "question": question}
     )
-    return {"generation": generation + "\n\n" + context, "loop_step": loop_step + 1}
+    return {
+        "generation": rewritten_question + "\n\n" + generation + "\n\n" + context,
+        "loop_step": loop_step + 1,
+    }
 
 
 def generate_question_not_relevant(state: State):
@@ -93,7 +98,7 @@ def generate_question_not_relevant(state: State):
     loop_step = state.get("loop_step", 0)
 
     return {
-        "generation": "Desole mais la question posee ne correspond pas a mon domaine d'expertise.",
+        "generation": "Désole mais la question posée ne correspond pas a mon domaine d'expertise.",
         "loop_step": loop_step + 1,
     }
 

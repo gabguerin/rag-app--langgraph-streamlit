@@ -60,7 +60,9 @@ def show():
                     color="#f9f9f9"
                 ),
             ):
-                col1, col2, col3, col4 = st.columns((15, 1, 1, 1), vertical_alignment="center")
+                col1, col2, col3, col4 = st.columns(
+                    (15, 1, 1, 1), vertical_alignment="center"
+                )
                 with col1:
                     col1.write(
                         f"{BOOK_EMOJI_SHORTCODES[idx % len(BOOK_EMOJI_SHORTCODES)]} {file_path.name}"
@@ -135,7 +137,7 @@ def show():
                                 help="Download",
                                 icon=":material/download:",
                                 file_name=file_path.name,
-                                mime="application/pdf"
+                                mime="application/pdf",
                             )
 
     # Handle uploaded file
