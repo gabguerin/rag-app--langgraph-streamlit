@@ -40,12 +40,12 @@ router:
       "Voici la question utilisateur :
       {question}
 
-      Déterminez si cette question concerne les rapports financiers des entreprises du SBF120 ou leurs activités. 
+      Déterminez si cette question concerne les rapports annuels des entreprises du SBF120 ou leurs activités. 
       Retournez un JSON avec la clé `relevant` valant 'yes' si elle est pertinente, sinon 'no'."
   prompt_inputs:
     - question
   instructions: |
-    "Analysez si la question concerne les entreprises du SBF120 ou leurs données financières."
+    "Analysez si la question posée peut etre contenu dans les rapports annuels fournis par les entreprises du SBF120."
   format_json: true
 
 question_rewriter:
