@@ -6,7 +6,7 @@ from frontend import chat, database
 # Load env variables
 load_dotenv()
 
-st.set_page_config(page_title="Oxfam RAG App", layout="centered")
+st.set_page_config(page_title="Oxfam RAG App", layout="wide")
 
 # Initialize session state for page selection
 if "page" not in st.session_state:
