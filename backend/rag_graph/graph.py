@@ -66,13 +66,14 @@ simple_workflow.add_node("generate", generate)
 simple_workflow.add_node("question_not_relevant", generate_question_not_relevant)
 
 # Build graph
-simple_workflow.set_conditional_entry_point(
-    route_question,
-    {
-        "yes": "retrieve",
-        "no": "question_not_relevant",
-    },
-)
+# simple_workflow.set_conditional_entry_point(
+#     route_question,
+#     {
+#         "yes": "retrieve",
+#         "no": "question_not_relevant",
+#     },
+# )
+simple_workflow.set_entry_point("retrieve")
 
 simple_workflow.add_edge("retrieve", "rewrite")
 simple_workflow.add_edge("rewrite", "generate")
