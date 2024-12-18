@@ -99,27 +99,6 @@ def show():
 
                 with col3:
                     with stylable_container(
-                        key=f"delete_button_{idx}",
-                        css_styles="""
-                            button {{
-                                border: 0;
-                                background-color: {color};
-                            }}
-                        """.format(
-                            color="#f9f9f9"
-                        ),
-                    ):
-                        if st.button(
-                            ":material/delete:",
-                            help="Delete",
-                            key=f"delete-{file_path.name}",
-                        ):
-                            delete_file_from_database(db, file_path)
-                            st.session_state.file_data.pop(idx)
-                            st.rerun()
-
-                with col4:
-                    with stylable_container(
                         key=f"download_button_{idx}",
                         css_styles="""
                             button {{
@@ -139,6 +118,27 @@ def show():
                                 file_name=file_path.name,
                                 mime="application/pdf",
                             )
+
+                with col4:
+                    with stylable_container(
+                        key=f"delete_button_{idx}",
+                        css_styles="""
+                            button {{
+                                border: 0;
+                                background-color: {color};
+                            }}
+                        """.format(
+                            color="#f9f9f9"
+                        ),
+                    ):
+                        if st.button(
+                            ":material/delete:",
+                            help="Delete",
+                            key=f"delete-{file_path.name}",
+                        ):
+                            delete_file_from_database(db, file_path)
+                            st.session_state.file_data.pop(idx)
+                            st.rerun()
 
     # Handle uploaded file
     uploaded_file = st.file_uploader(
