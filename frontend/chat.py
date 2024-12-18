@@ -30,20 +30,15 @@ def show():
 
         # Generate assistant response
         with st.chat_message("assistant"):
-            response = "Désolé, je n'ai pas compris votre question."  # Default fallback
             try:
                 inputs = {
                     "question": prompt,
                     "history": st.session_state.messages,
                     "max_retries": 3,
                 }
-                response_parts = []
-                # Stream the response for dynamic updates
                 for event in graph.stream(inputs, stream_mode="values"):
-                    chunk = event.get("generation", "")
-                    response_parts.append(chunk)
-                    st.markdown("".join(response_parts))  # Update progressively
-                response = "".join(response_parts)
+                    print("Graph state: " + event["loop_step"])
+                response = event["generation"]
             except Exception as e:
                 st.error("Une erreur est survenue. Veuillez réessayer plus tard.")
                 response = f"Erreur : {str(e)}"
