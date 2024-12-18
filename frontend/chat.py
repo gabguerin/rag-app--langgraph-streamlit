@@ -37,7 +37,7 @@ def show():
                     "max_retries": 3,
                 }
                 for event in graph.stream(inputs, stream_mode="values"):
-                    print("Graph state: " + event["loop_step"])
+                    print(event)
                 response = event["generation"]
             except Exception as e:
                 st.error("Une erreur est survenue. Veuillez réessayer plus tard.")
